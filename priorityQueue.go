@@ -17,6 +17,12 @@ type Item struct {
 // A Queue implements heap.Interface and holds Items.
 type Queue []*Item
 
+// PriorityQueue wraps the actual priority queue and provides additional functionality
+type PriorityQueue struct {
+	harr                        Queue
+	queueName, queueDescription string
+}
+
 func (q Queue) Len() int { return len(q) }
 
 func (q Queue) Less(i, j int) bool {
@@ -77,6 +83,10 @@ func main() {
 		i++
 	}
 	heap.Init(&q)
+
+	priorityQueue := PriorityQueue{harr: q,
+		queueName:        "DefaultQueue",
+		queueDescription: "This queue is for demonstration of Priority Queue Implementation"}
 
 	// Insert a new item and then modify its priority.
 	item := &Item{
