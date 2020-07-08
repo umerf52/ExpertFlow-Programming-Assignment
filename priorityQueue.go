@@ -4,6 +4,7 @@ package main
 import (
 	"container/heap"
 	"fmt"
+	"math/rand"
 	"time"
 )
 
@@ -67,43 +68,42 @@ func (q *Queue) update(customerRequest *CustomerRequest, description string, pri
 // This example creates a Queue with some customerRequests, adds and manipulates an customerRequest,
 // and then removes the customerRequests in priorityWeight order.
 func main() {
-	// Some customerRequests and their priorities.
-	customerRequests := map[string]int{
-		"banana": 3, "apple": 2, "pear": 4,
+	ids, priorities := make([]int, 0), make([]int, 0)
+	names, descs := make([]string, 0), make([]string, 0)
+
+	for i := 0; i < 10; i++ {
+		ids = append(ids, i)
+		priorities = append(priorities, rand.Intn(10)+1)
+		names = append(names, "one")
+		descs = append(descs, "")
 	}
+
+	pq := PriorityQueue{
+		queueName:        "DefaultQueue",
+		queueDescription: "This queue is for demonstration of Priority Queue implementation"}
 
 	// Create a priority queue, put the customerRequests in it, and
 	// establish the priority queue (heap) invariants.
-	q := make(Queue, len(customerRequests))
-	i := 0
-	for value, priority := range customerRequests {
-		q[i] = &CustomerRequest{
-			description:    value,
-			priorityWeight: priority,
-			index:          i,
+	pq.harr = make(Queue, 10)
+
+	for i := 0; i < 10; i++ {
+		pq.harr[i] = &CustomerRequest{
+			id:             ids[i],
+			priorityWeight: priorities[i],
+			customerName:   names[i],
+			description:    descs[i],
 			enqueueTime:    time.Now(),
+			index:          i,
 		}
-		i++
 	}
-	heap.Init(&q)
 
-	priorityQueue := PriorityQueue{harr: q,
-		queueName:        "DefaultQueue",
-		queueDescription: "This queue is for demonstration of Priority Queue Implementation"}
+	heap.Init(&pq.harr)
 
-	fmt.Println(priorityQueue.queueName, priorityQueue.queueDescription)
-	// Insert a new customerRequest and then modify its priorityWeight.
-	customerRequest := &CustomerRequest{
-		description:    "orange",
-		priorityWeight: 1,
-	}
-	heap.Push(&q, customerRequest)
-	q.update(customerRequest, customerRequest.description, 5)
+	fmt.Println(pq.queueName, pq.queueDescription)
 
 	// Take the customerRequests out; they arrive in decreasing priorityWeight order.
-	for q.Len() > 0 {
-		customerRequest := heap.Pop(&q).(*CustomerRequest)
-		// fmt.Printf("%.2d:%s ", customerRequest.priorityWeight, customerRequest.description)
-		fmt.Println(customerRequest.priorityWeight, customerRequest.description, customerRequest.enqueueTime)
+	for pq.harr.Len() > 0 {
+		cr := heap.Pop(&pq.harr).(*CustomerRequest)
+		fmt.Println(cr.priorityWeight, cr.customerName, cr.description, cr.enqueueTime)
 	}
 }
