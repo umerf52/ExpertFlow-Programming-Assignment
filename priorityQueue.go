@@ -14,47 +14,49 @@ type Item struct {
 	index int // The index of the item in the heap.
 }
 
-// A PriorityQueue implements heap.Interface and holds Items.
-type PriorityQueue []*Item
+// A Queue implements heap.Interface and holds Items.
+type Queue []*Item
 
-func (pq PriorityQueue) Len() int { return len(pq) }
+func (q Queue) Len() int { return len(q) }
 
-func (pq PriorityQueue) Less(i, j int) bool {
+func (q Queue) Less(i, j int) bool {
 	// We want Pop to give us the highest, not lowest, priority so we use greater than here.
-	return pq[i].priority > pq[j].priority
+	return q[i].priority > q[j].priority
 }
 
-func (pq PriorityQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].index = i
-	pq[j].index = j
+func (q Queue) Swap(i, j int) {
+	q[i], q[j] = q[j], q[i]
+	q[i].index = i
+	q[j].index = j
 }
 
-func (pq *PriorityQueue) Push(x interface{}) {
-	n := len(*pq)
+// Push : Implementation of Heap's Push()
+func (q *Queue) Push(x interface{}) {
+	n := len(*q)
 	item := x.(*Item)
 	item.index = n
-	*pq = append(*pq, item)
+	*q = append(*q, item)
 }
 
-func (pq *PriorityQueue) Pop() interface{} {
-	old := *pq
+// Pop : Implementation of Heap's Pop()
+func (q *Queue) Pop() interface{} {
+	old := *q
 	n := len(old)
 	item := old[n-1]
 	old[n-1] = nil  // avoid memory leak
 	item.index = -1 // for safety
-	*pq = old[0 : n-1]
+	*q = old[0 : n-1]
 	return item
 }
 
 // update modifies the priority and value of an Item in the queue.
-func (pq *PriorityQueue) update(item *Item, value string, priority int) {
+func (q *Queue) update(item *Item, value string, priority int) {
 	item.value = value
 	item.priority = priority
-	heap.Fix(pq, item.index)
+	heap.Fix(q, item.index)
 }
 
-// This example creates a PriorityQueue with some items, adds and manipulates an item,
+// This example creates a Queue with some items, adds and manipulates an item,
 // and then removes the items in priority order.
 func main() {
 	// Some items and their priorities.
@@ -64,29 +66,29 @@ func main() {
 
 	// Create a priority queue, put the items in it, and
 	// establish the priority queue (heap) invariants.
-	pq := make(PriorityQueue, len(items))
+	q := make(Queue, len(items))
 	i := 0
 	for value, priority := range items {
-		pq[i] = &Item{
+		q[i] = &Item{
 			value:    value,
 			priority: priority,
 			index:    i,
 		}
 		i++
 	}
-	heap.Init(&pq)
+	heap.Init(&q)
 
 	// Insert a new item and then modify its priority.
 	item := &Item{
 		value:    "orange",
 		priority: 1,
 	}
-	heap.Push(&pq, item)
-	pq.update(item, item.value, 5)
+	heap.Push(&q, item)
+	q.update(item, item.value, 5)
 
 	// Take the items out; they arrive in decreasing priority order.
-	for pq.Len() > 0 {
-		item := heap.Pop(&pq).(*Item)
+	for q.Len() > 0 {
+		item := heap.Pop(&q).(*Item)
 		fmt.Printf("%.2d:%s ", item.priority, item.value)
 	}
 }
