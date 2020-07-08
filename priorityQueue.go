@@ -6,16 +6,16 @@ import (
 	"fmt"
 )
 
-// An Item is something we manage in a priority queue.
-type Item struct {
-	value    string // The value of the item; arbitrary.
-	priority int    // The priority of the item in the queue.
+// An CustomerRequest is something we manage in a priority queue.
+type CustomerRequest struct {
+	customerName, description string // The value of the customerRequest; arbitrary.
+	priorityWeight, id        int    // The priority of the customerRequest in the queue.
 	// The index is needed by update and is maintained by the heap.Interface methods.
-	index int // The index of the item in the heap.
+	index int // The index of the customerRequest in the heap.
 }
 
-// A Queue implements heap.Interface and holds Items.
-type Queue []*Item
+// A Queue implements heap.Interface and holds CustomerRequests.
+type Queue []*CustomerRequest
 
 // PriorityQueue wraps the actual priority queue and provides additional functionality
 type PriorityQueue struct {
@@ -26,8 +26,8 @@ type PriorityQueue struct {
 func (q Queue) Len() int { return len(q) }
 
 func (q Queue) Less(i, j int) bool {
-	// We want Pop to give us the highest, not lowest, priority so we use greater than here.
-	return q[i].priority > q[j].priority
+	// We want Pop to give us the highest, not lowest, priorityWeight so we use greater than here.
+	return q[i].priorityWeight > q[j].priorityWeight
 }
 
 func (q Queue) Swap(i, j int) {
@@ -39,46 +39,46 @@ func (q Queue) Swap(i, j int) {
 // Push : Implementation of Heap's Push()
 func (q *Queue) Push(x interface{}) {
 	n := len(*q)
-	item := x.(*Item)
-	item.index = n
-	*q = append(*q, item)
+	customerRequest := x.(*CustomerRequest)
+	customerRequest.index = n
+	*q = append(*q, customerRequest)
 }
 
 // Pop : Implementation of Heap's Pop()
 func (q *Queue) Pop() interface{} {
 	old := *q
 	n := len(old)
-	item := old[n-1]
-	old[n-1] = nil  // avoid memory leak
-	item.index = -1 // for safety
+	customerRequest := old[n-1]
+	old[n-1] = nil             // avoid memory leak
+	customerRequest.index = -1 // for safety
 	*q = old[0 : n-1]
-	return item
+	return customerRequest
 }
 
-// update modifies the priority and value of an Item in the queue.
-func (q *Queue) update(item *Item, value string, priority int) {
-	item.value = value
-	item.priority = priority
-	heap.Fix(q, item.index)
+// update modifies the priorityWeight and value of an CustomerRequest in the queue.
+func (q *Queue) update(customerRequest *CustomerRequest, description string, priorityWeight int) {
+	customerRequest.description = description
+	customerRequest.priorityWeight = priorityWeight
+	heap.Fix(q, customerRequest.index)
 }
 
-// This example creates a Queue with some items, adds and manipulates an item,
-// and then removes the items in priority order.
+// This example creates a Queue with some customerRequests, adds and manipulates an customerRequest,
+// and then removes the customerRequests in priorityWeight order.
 func main() {
-	// Some items and their priorities.
-	items := map[string]int{
+	// Some customerRequests and their priorities.
+	customerRequests := map[string]int{
 		"banana": 3, "apple": 2, "pear": 4,
 	}
 
-	// Create a priority queue, put the items in it, and
+	// Create a priority queue, put the customerRequests in it, and
 	// establish the priority queue (heap) invariants.
-	q := make(Queue, len(items))
+	q := make(Queue, len(customerRequests))
 	i := 0
-	for value, priority := range items {
-		q[i] = &Item{
-			value:    value,
-			priority: priority,
-			index:    i,
+	for value, priority := range customerRequests {
+		q[i] = &CustomerRequest{
+			description:    value,
+			priorityWeight: priority,
+			index:          i,
 		}
 		i++
 	}
@@ -88,17 +88,18 @@ func main() {
 		queueName:        "DefaultQueue",
 		queueDescription: "This queue is for demonstration of Priority Queue Implementation"}
 
-	// Insert a new item and then modify its priority.
-	item := &Item{
-		value:    "orange",
-		priority: 1,
+	fmt.Println(priorityQueue.queueName, priorityQueue.queueDescription)
+	// Insert a new customerRequest and then modify its priorityWeight.
+	customerRequest := &CustomerRequest{
+		description:    "orange",
+		priorityWeight: 1,
 	}
-	heap.Push(&q, item)
-	q.update(item, item.value, 5)
+	heap.Push(&q, customerRequest)
+	q.update(customerRequest, customerRequest.description, 5)
 
-	// Take the items out; they arrive in decreasing priority order.
+	// Take the customerRequests out; they arrive in decreasing priorityWeight order.
 	for q.Len() > 0 {
-		item := heap.Pop(&q).(*Item)
-		fmt.Printf("%.2d:%s ", item.priority, item.value)
+		customerRequest := heap.Pop(&q).(*CustomerRequest)
+		fmt.Printf("%.2d:%s ", customerRequest.priorityWeight, customerRequest.description)
 	}
 }
