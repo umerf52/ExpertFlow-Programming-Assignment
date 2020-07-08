@@ -4,12 +4,14 @@ package main
 import (
 	"container/heap"
 	"fmt"
+	"time"
 )
 
 // An CustomerRequest is something we manage in a priority queue.
 type CustomerRequest struct {
 	customerName, description string // The value of the customerRequest; arbitrary.
 	priorityWeight, id        int    // The priority of the customerRequest in the queue.
+	enqueueTime               time.Time
 	// The index is needed by update and is maintained by the heap.Interface methods.
 	index int // The index of the customerRequest in the heap.
 }
@@ -79,6 +81,7 @@ func main() {
 			description:    value,
 			priorityWeight: priority,
 			index:          i,
+			enqueueTime:    time.Now(),
 		}
 		i++
 	}
@@ -100,6 +103,7 @@ func main() {
 	// Take the customerRequests out; they arrive in decreasing priorityWeight order.
 	for q.Len() > 0 {
 		customerRequest := heap.Pop(&q).(*CustomerRequest)
-		fmt.Printf("%.2d:%s ", customerRequest.priorityWeight, customerRequest.description)
+		// fmt.Printf("%.2d:%s ", customerRequest.priorityWeight, customerRequest.description)
+		fmt.Println(customerRequest.priorityWeight, customerRequest.description, customerRequest.enqueueTime)
 	}
 }
