@@ -2,9 +2,11 @@
 package main
 
 import (
+	"bufio"
 	"container/heap"
 	"fmt"
 	"math/rand"
+	"os"
 	"time"
 )
 
@@ -65,9 +67,31 @@ func (q *Queue) update(customerRequest *CustomerRequest, description string, pri
 	heap.Fix(q, customerRequest.index)
 }
 
+func printMenu() {
+	fmt.Println("*************************************************************")
+	fmt.Println("* Welcome to Priority Queue, please select from following   *")
+	fmt.Println("*************************************************************")
+	fmt.Println("1. List Customers in Queue")
+	fmt.Println("2. List Customer Details in Queue")
+	fmt.Println("3. Service Customer")
+	fmt.Println("4. Enqueue Customer Request")
+	fmt.Println("5. Renege Customer Request")
+	fmt.Println("6. System Information")
+	fmt.Println("7. System Memory Dump")
+	fmt.Println("")
+}
+
+func getInput() string {
+	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+	return string([]byte(input)[0])
+}
+
 // This example creates a Queue with some customerRequests, adds and manipulates an customerRequest,
 // and then removes the customerRequests in priorityWeight order.
 func main() {
+	printMenu()
+
 	ids, priorities := make([]int, 0), make([]int, 0)
 	names, descs := make([]string, 0), make([]string, 0)
 
@@ -95,6 +119,7 @@ func main() {
 			enqueueTime:    time.Now(),
 			index:          i,
 		}
+		time.Sleep(500000000)
 	}
 
 	heap.Init(&pq.harr)
