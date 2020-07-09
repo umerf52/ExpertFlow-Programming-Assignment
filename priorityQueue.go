@@ -4,6 +4,7 @@ package main
 import (
 	"bufio"
 	"container/heap"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -26,6 +27,16 @@ type Queue []*CustomerRequest
 type PriorityQueue struct {
 	harr                        Queue
 	queueName, queueDescription string
+}
+
+type IDJSON struct {
+	ID int
+}
+
+type Selection1Struct struct {
+	QueueName, QueueDescription string
+	Size, OldestTaskID          int
+	CustomerRequests            []IDJSON
 }
 
 func (q Queue) Len() int { return len(q) }
@@ -51,6 +62,9 @@ func (q *Queue) Push(x interface{}) {
 
 // Pop : Implementation of Heap's Pop()
 func (q *Queue) Pop() interface{} {
+	if q.Len() <= 0 {
+		return CustomerRequest{}
+	}
 	old := *q
 	n := len(old)
 	customerRequest := old[n-1]
@@ -90,6 +104,34 @@ func getInput() string {
 	return string([]byte(input)[0])
 }
 
+func getOldestTaskID(pq *PriorityQueue) int {
+	oldestID := pq.harr[0].id
+	oldestTime := pq.harr[0].enqueueTime
+	for i := 1; i < len(pq.harr); i++ {
+		cr := pq.harr[i]
+		if cr.enqueueTime.Before(oldestTime) {
+			oldestTime = cr.enqueueTime
+			oldestID = cr.id
+		}
+	}
+	return oldestID
+}
+
+func selection1(pq *PriorityQueue) {
+	tempArray := make([]IDJSON, 0)
+	for i := 0; i < len(pq.harr); i++ {
+		tempArray = append(tempArray, IDJSON{ID: pq.harr[i].id})
+	}
+	s1Struct := Selection1Struct{QueueName: pq.queueName,
+		QueueDescription: pq.queueDescription,
+		Size:             len(pq.harr),
+		OldestTaskID:     getOldestTaskID(pq),
+		CustomerRequests: tempArray}
+
+	jsonData, _ := json.MarshalIndent(s1Struct, "", "    ")
+	fmt.Println(string(jsonData))
+}
+
 // This example creates a Queue with some customerRequests, adds and manipulates an customerRequest,
 // and then removes the customerRequests in priorityWeight order.
 func main() {
@@ -111,7 +153,7 @@ func main() {
 	// establish the priority queue (heap) invariants.
 	pq.harr = make(Queue, 10)
 
-	for i := 0; i < 10; i++ {
+	for i := 9; i >= 0; i-- {
 		cr := &CustomerRequest{
 			id:             ids[i],
 			priorityWeight: priorities[i],
@@ -120,19 +162,20 @@ func main() {
 			enqueueTime:    time.Now(),
 			index:          i,
 		}
-		fmt.Println(cr.priorityWeight, cr.customerName, cr.description, cr.enqueueTime)
+		fmt.Println(cr.id, cr.priorityWeight, cr.customerName, cr.description, cr.enqueueTime)
 		pq.harr[i] = cr
 		time.Sleep(500000000)
 	}
 	fmt.Println("")
 
 	heap.Init(&pq.harr)
-
 	printMenu()
 	for true {
 		c := getInput()
 
 		switch c {
+		case "1":
+			selection1(&pq)
 		case "8":
 			printMenu()
 		case "9":
