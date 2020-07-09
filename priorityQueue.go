@@ -78,10 +78,13 @@ func printMenu() {
 	fmt.Println("5. Renege Customer Request")
 	fmt.Println("6. System Information")
 	fmt.Println("7. System Memory Dump")
+	fmt.Println("8. Reprint Menu")
+	fmt.Println("9. Exit")
 	fmt.Println("")
 }
 
 func getInput() string {
+	fmt.Printf("Enter selection: ")
 	reader := bufio.NewReader(os.Stdin)
 	input, _ := reader.ReadString('\n')
 	return string([]byte(input)[0])
@@ -90,8 +93,6 @@ func getInput() string {
 // This example creates a Queue with some customerRequests, adds and manipulates an customerRequest,
 // and then removes the customerRequests in priorityWeight order.
 func main() {
-	printMenu()
-
 	ids, priorities := make([]int, 0), make([]int, 0)
 	names, descs := make([]string, 0), make([]string, 0)
 
@@ -111,7 +112,7 @@ func main() {
 	pq.harr = make(Queue, 10)
 
 	for i := 0; i < 10; i++ {
-		pq.harr[i] = &CustomerRequest{
+		cr := &CustomerRequest{
 			id:             ids[i],
 			priorityWeight: priorities[i],
 			customerName:   names[i],
@@ -119,16 +120,26 @@ func main() {
 			enqueueTime:    time.Now(),
 			index:          i,
 		}
+		fmt.Println(cr.priorityWeight, cr.customerName, cr.description, cr.enqueueTime)
+		pq.harr[i] = cr
 		time.Sleep(500000000)
 	}
+	fmt.Println("")
 
 	heap.Init(&pq.harr)
 
-	fmt.Println(pq.queueName, pq.queueDescription)
+	printMenu()
+	for true {
+		c := getInput()
 
-	// Take the customerRequests out; they arrive in decreasing priorityWeight order.
-	for pq.harr.Len() > 0 {
-		cr := heap.Pop(&pq.harr).(*CustomerRequest)
-		fmt.Println(cr.priorityWeight, cr.customerName, cr.description, cr.enqueueTime)
+		switch c {
+		case "8":
+			printMenu()
+		case "9":
+			return
+		default:
+			fmt.Println("Invalid selection")
+		}
 	}
+
 }
