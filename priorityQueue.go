@@ -13,9 +13,10 @@ import (
 
 // An CustomerRequest is something we manage in a priority queue.
 type CustomerRequest struct {
-	customerName, description string // The value of the customerRequest; arbitrary.
-	priorityWeight, id        int    // The priority of the customerRequest in the queue.
-	enqueueTime               time.Time
+	ID                        int
+	CustomerName, Description string // The value of the customerRequest; arbitrary.
+	PriorityWeight            int    // The priority of the customerRequest in the queue.
+	EnqueueTime               time.Time
 	// The index is needed by update and is maintained by the heap.Interface methods.
 	index int // The index of the customerRequest in the heap.
 }
@@ -23,7 +24,7 @@ type CustomerRequest struct {
 // A Queue implements heap.Interface and holds CustomerRequests.
 type Queue []*CustomerRequest
 
-// PriorityQueue wraps the actual priority queue and provides additional functionality
+// PriorityQueue wraps the actual priority queue and provIDes additional functionality
 type PriorityQueue struct {
 	harr                        Queue
 	queueName, queueDescription string
@@ -39,11 +40,17 @@ type Selection1Struct struct {
 	CustomerRequests            []IDJSON
 }
 
+type Selection2Struct struct {
+	QueueName, QueueDescription string
+	Size, OldestTaskID          int
+	CustomerRequests            []*CustomerRequest
+}
+
 func (q Queue) Len() int { return len(q) }
 
 func (q Queue) Less(i, j int) bool {
-	// We want Pop to give us the highest, not lowest, priorityWeight so we use greater than here.
-	return q[i].priorityWeight > q[j].priorityWeight
+	// We want Pop to give us the highest, not lowest, PriorityWeight so we use greater than here.
+	return q[i].PriorityWeight > q[j].PriorityWeight
 }
 
 func (q Queue) Swap(i, j int) {
@@ -74,10 +81,10 @@ func (q *Queue) Pop() interface{} {
 	return customerRequest
 }
 
-// update modifies the priorityWeight and value of an CustomerRequest in the queue.
+// update modifies the PriorityWeight and value of an CustomerRequest in the queue.
 func (q *Queue) update(customerRequest *CustomerRequest, description string, priorityWeight int) {
-	customerRequest.description = description
-	customerRequest.priorityWeight = priorityWeight
+	customerRequest.Description = description
+	customerRequest.PriorityWeight = priorityWeight
 	heap.Fix(q, customerRequest.index)
 }
 
@@ -93,7 +100,7 @@ func printMenu() {
 	fmt.Println("6. System Information")
 	fmt.Println("7. System Memory Dump")
 	fmt.Println("8. Reprint Menu")
-	fmt.Println("9. Exit")
+	fmt.Println("0. Exit")
 	fmt.Println("")
 }
 
@@ -105,13 +112,13 @@ func getInput() string {
 }
 
 func getOldestTaskID(pq *PriorityQueue) int {
-	oldestID := pq.harr[0].id
-	oldestTime := pq.harr[0].enqueueTime
+	oldestID := pq.harr[0].ID
+	oldestTime := pq.harr[0].EnqueueTime
 	for i := 1; i < len(pq.harr); i++ {
 		cr := pq.harr[i]
-		if cr.enqueueTime.Before(oldestTime) {
-			oldestTime = cr.enqueueTime
-			oldestID = cr.id
+		if cr.EnqueueTime.Before(oldestTime) {
+			oldestTime = cr.EnqueueTime
+			oldestID = cr.ID
 		}
 	}
 	return oldestID
@@ -120,7 +127,7 @@ func getOldestTaskID(pq *PriorityQueue) int {
 func selection1(pq *PriorityQueue) {
 	tempArray := make([]IDJSON, 0)
 	for i := 0; i < len(pq.harr); i++ {
-		tempArray = append(tempArray, IDJSON{ID: pq.harr[i].id})
+		tempArray = append(tempArray, IDJSON{ID: pq.harr[i].ID})
 	}
 	s1Struct := Selection1Struct{QueueName: pq.queueName,
 		QueueDescription: pq.queueDescription,
@@ -132,8 +139,31 @@ func selection1(pq *PriorityQueue) {
 	fmt.Println(string(jsonData))
 }
 
+func selection2(pq *PriorityQueue) {
+	tempArray := make([]*CustomerRequest, 0)
+	for i := 0; i < len(pq.harr); i++ {
+		cr := &CustomerRequest{
+			ID:             pq.harr[i].ID,
+			PriorityWeight: pq.harr[i].PriorityWeight,
+			CustomerName:   pq.harr[i].CustomerName,
+			Description:    pq.harr[i].Description,
+			EnqueueTime:    pq.harr[i].EnqueueTime,
+			index:          pq.harr[i].index,
+		}
+		tempArray = append(tempArray, cr)
+	}
+	s2Struct := Selection2Struct{QueueName: pq.queueName,
+		QueueDescription: pq.queueDescription,
+		Size:             len(pq.harr),
+		OldestTaskID:     getOldestTaskID(pq),
+		CustomerRequests: tempArray}
+
+	jsonData, _ := json.MarshalIndent(s2Struct, "", "    ")
+	fmt.Println(string(jsonData))
+}
+
 // This example creates a Queue with some customerRequests, adds and manipulates an customerRequest,
-// and then removes the customerRequests in priorityWeight order.
+// and then removes the customerRequests in PriorityWeight order.
 func main() {
 	ids, priorities := make([]int, 0), make([]int, 0)
 	names, descs := make([]string, 0), make([]string, 0)
@@ -155,14 +185,14 @@ func main() {
 
 	for i := 9; i >= 0; i-- {
 		cr := &CustomerRequest{
-			id:             ids[i],
-			priorityWeight: priorities[i],
-			customerName:   names[i],
-			description:    descs[i],
-			enqueueTime:    time.Now(),
+			ID:             ids[i],
+			PriorityWeight: priorities[i],
+			CustomerName:   names[i],
+			Description:    descs[i],
+			EnqueueTime:    time.Now(),
 			index:          i,
 		}
-		fmt.Println(cr.id, cr.priorityWeight, cr.customerName, cr.description, cr.enqueueTime)
+		fmt.Println(cr.ID, cr.PriorityWeight, cr.CustomerName, cr.Description, cr.EnqueueTime)
 		pq.harr[i] = cr
 		time.Sleep(500000000)
 	}
@@ -176,9 +206,11 @@ func main() {
 		switch c {
 		case "1":
 			selection1(&pq)
+		case "2":
+			selection2(&pq)
 		case "8":
 			printMenu()
-		case "9":
+		case "0":
 			return
 		default:
 			fmt.Println("Invalid selection")
