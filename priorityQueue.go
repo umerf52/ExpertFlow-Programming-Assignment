@@ -29,6 +29,7 @@ type Queue []*CustomerRequest
 type PriorityQueue struct {
 	harr                        Queue
 	queueName, queueDescription string
+	count                       int
 }
 
 type IDJSON struct {
@@ -60,6 +61,14 @@ type Selection4Struct struct {
 	PriorityWeight, ID        int // The priority of the customerRequest in the queue.
 	EnqueueTime               time.Time
 	PositionInQueue           int
+}
+
+type Selection5Struct struct {
+	CustomerName  string
+	ID            int
+	EnqueueTime   time.Time
+	WaitTimeinSec float64
+	Message       string
 }
 
 func (q Queue) Len() int { return len(q) }
@@ -192,33 +201,31 @@ func selection3(pq *PriorityQueue) {
 	fmt.Println(string(jsonData))
 }
 
-func getInput() (string, string, int) {
+func getInput() string {
 	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("Please enter following information: ")
-	fmt.Printf("Customer Name: ")
 	scanner.Scan()
-	name := scanner.Text()
-	fmt.Printf("Description: ")
-	scanner.Scan()
-	desc := scanner.Text()
-	fmt.Printf("Priority Weight: ")
-	scanner.Scan()
-	priorityStr := scanner.Text()
-	priorityInt, _ := strconv.Atoi(priorityStr)
-	fmt.Println("")
-	return name, desc, priorityInt
+	temp := scanner.Text()
+	return temp
 }
 
 func selection4(pq *PriorityQueue) {
-	name, desc, priority := getInput()
+	fmt.Println("Please enter following information: ")
+	fmt.Printf("Customer Name: ")
+	name := getInput()
+	fmt.Printf("Description: ")
+	desc := getInput()
+	fmt.Printf("Priority Weight: ")
+	priorityStr := getInput()
+	priorityInt, _ := strconv.Atoi(priorityStr)
 	cr := &CustomerRequest{
-		ID:             len(pq.harr),
-		PriorityWeight: priority,
+		ID:             pq.count,
+		PriorityWeight: priorityInt,
 		CustomerName:   name,
 		Description:    desc,
 		EnqueueTime:    time.Now(),
 		index:          len(pq.harr),
 	}
+	pq.count++
 	heap.Push(&pq.harr, cr)
 	fmt.Println("Customer Request is enqueued with following information:")
 
@@ -230,6 +237,33 @@ func selection4(pq *PriorityQueue) {
 		PositionInQueue: len(pq.harr) - 1}
 
 	jsonData, _ := json.MarshalIndent(s4Struct, "", "    ")
+	fmt.Println(string(jsonData))
+}
+
+func selection5(pq *PriorityQueue) {
+	fmt.Printf("Please enter customer ID: ")
+	tempStr := getInput()
+	delID, _ := strconv.Atoi(tempStr)
+	cr := &CustomerRequest{}
+	for i := 0; i < len(pq.harr); i++ {
+		if pq.harr[i].ID == delID {
+			cr = pq.harr[i]
+			break
+		}
+	}
+	maxInt := int(^uint(0) >> 1)
+	cr.PriorityWeight = maxInt
+	heap.Fix(&pq.harr, cr.index)
+	_ = heap.Pop(&pq.harr).(*CustomerRequest)
+	fmt.Println("Reneged following customer request sucessfully:")
+	s5Struct := Selection5Struct{
+		CustomerName:  cr.CustomerName,
+		ID:            cr.ID,
+		EnqueueTime:   cr.EnqueueTime,
+		WaitTimeinSec: time.Since(cr.EnqueueTime).Seconds(),
+		Message:       "Request reneged successfully"}
+
+	jsonData, _ := json.MarshalIndent(s5Struct, "", "    ")
 	fmt.Println(string(jsonData))
 }
 
@@ -248,7 +282,8 @@ func main() {
 
 	pq := PriorityQueue{
 		queueName:        "DefaultQueue",
-		queueDescription: "This queue is for demonstration of Priority Queue implementation"}
+		queueDescription: "This queue is for demonstration of Priority Queue implementation",
+		count:            0}
 
 	// Create a priority queue, put the customerRequests in it, and
 	// establish the priority queue (heap) invariants.
@@ -265,6 +300,7 @@ func main() {
 		}
 		fmt.Println(cr.ID, cr.PriorityWeight, cr.CustomerName, cr.Description, cr.EnqueueTime)
 		pq.harr[i] = cr
+		pq.count++
 		time.Sleep(500000000)
 	}
 	fmt.Println("")
@@ -283,6 +319,8 @@ func main() {
 			selection3(&pq)
 		case "4":
 			selection4(&pq)
+		case "5":
+			selection5(&pq)
 		case "8":
 			printMenu()
 		case "0":
