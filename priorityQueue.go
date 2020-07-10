@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"container/heap"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -25,11 +26,12 @@ type CustomerRequest struct {
 // A Queue implements heap.Interface and holds CustomerRequests.
 type Queue []*CustomerRequest
 
-// PriorityQueue wraps the actual priority queue and provIDes additional functionality
+// PriorityQueue wraps the actual priority queue and provides additional functionality
 type PriorityQueue struct {
 	harr                        Queue
 	queueName, queueDescription string
-	size, count                 int
+	capacity, count, key        int
+	isInitialized               bool
 }
 
 type IDJSON struct {
@@ -123,10 +125,13 @@ func (q *Queue) update(customerRequest *CustomerRequest, description string, pri
 	heap.Fix(q, customerRequest.index)
 }
 
-func printMenu() {
+func printHeader() {
 	fmt.Println("*************************************************************")
 	fmt.Println("* Welcome to Priority Queue, please select from following   *")
 	fmt.Println("*************************************************************")
+}
+
+func printMenu() {
 	fmt.Println("1. List Customers in Queue")
 	fmt.Println("2. List Customer Details in Queue")
 	fmt.Println("3. Service Customer")
@@ -146,7 +151,10 @@ func getSelection() string {
 	return string([]byte(input)[0])
 }
 
-func getOldestTaskID(pq *PriorityQueue) int {
+func getOldestTaskID(pq *PriorityQueue) (int, error) {
+	if pq.count <= 0 {
+		return -1, errors.New("Queue is empty.")
+	}
 	oldestID := pq.harr[0].ID
 	oldestTime := pq.harr[0].EnqueueTime
 	for i := 1; i < len(pq.harr); i++ {
@@ -156,7 +164,7 @@ func getOldestTaskID(pq *PriorityQueue) int {
 			oldestID = cr.ID
 		}
 	}
-	return oldestID
+	return oldestID, nil
 }
 
 func selection1(pq *PriorityQueue) {
@@ -164,10 +172,11 @@ func selection1(pq *PriorityQueue) {
 	for i := 0; i < len(pq.harr); i++ {
 		tempArray = append(tempArray, IDJSON{ID: pq.harr[i].ID})
 	}
+	oldest, _ := getOldestTaskID(pq)
 	s1Struct := Selection1Struct{QueueName: pq.queueName,
 		QueueDescription: pq.queueDescription,
 		Size:             len(pq.harr),
-		OldestTaskID:     getOldestTaskID(pq),
+		OldestTaskID:     oldest,
 		CustomerRequests: tempArray}
 
 	jsonData, _ := json.MarshalIndent(s1Struct, "", "    ")
@@ -175,6 +184,7 @@ func selection1(pq *PriorityQueue) {
 }
 
 func selection2(pq *PriorityQueue) {
+	fmt.Println("Printing List of Customer Details in Queue")
 	tempArray := make([]*CustomerRequest, 0)
 	for i := 0; i < len(pq.harr); i++ {
 		cr := &CustomerRequest{
@@ -187,10 +197,11 @@ func selection2(pq *PriorityQueue) {
 		}
 		tempArray = append(tempArray, cr)
 	}
+	oldest, _ := getOldestTaskID(pq)
 	s2Struct := Selection2Struct{QueueName: pq.queueName,
 		QueueDescription: pq.queueDescription,
 		Size:             len(pq.harr),
-		OldestTaskID:     getOldestTaskID(pq),
+		OldestTaskID:     oldest,
 		CustomerRequests: tempArray}
 
 	jsonData, _ := json.MarshalIndent(s2Struct, "", "    ")
@@ -198,8 +209,13 @@ func selection2(pq *PriorityQueue) {
 }
 
 func selection3(pq *PriorityQueue) {
+	if pq.count <= 0 {
+		fmt.Println("Queue is empty.")
+		return
+	}
 	fmt.Println("Dequeuing Customer Request")
 	cr := heap.Pop(&pq.harr).(*CustomerRequest)
+	pq.count--
 	s3Struct := Selection3Struct{ID: cr.ID,
 		PriorityWeight: cr.PriorityWeight,
 		CustomerName:   cr.CustomerName,
@@ -228,17 +244,17 @@ func selection4(pq *PriorityQueue) {
 	priorityStr := getInput()
 	priorityInt, _ := strconv.Atoi(priorityStr)
 	cr := &CustomerRequest{
-		ID:             pq.count,
 		PriorityWeight: priorityInt,
 		CustomerName:   name,
 		Description:    desc,
 		EnqueueTime:    time.Now(),
 		index:          len(pq.harr),
 	}
-	pq.count++
-	heap.Push(&pq.harr, cr)
-	fmt.Println("Customer Request is enqueued with following information:")
+	if !insert(pq, cr) {
+		return
+	}
 
+	fmt.Printf("\nCustomer Request is enqueued with following information:\n")
 	s4Struct := Selection4Struct{ID: cr.ID,
 		PriorityWeight:  cr.PriorityWeight,
 		CustomerName:    cr.CustomerName,
@@ -250,24 +266,29 @@ func selection4(pq *PriorityQueue) {
 	fmt.Println(string(jsonData))
 }
 
-func getCrByID(pq *PriorityQueue, ID int) *CustomerRequest {
+func getCrByID(pq *PriorityQueue, ID int) (*CustomerRequest, error) {
 	for i := 0; i < len(pq.harr); i++ {
 		if pq.harr[i].ID == ID {
-			return pq.harr[i]
+			return pq.harr[i], nil
 		}
 	}
-	return nil
+	return nil, errors.New("ID not found.")
 }
 
 func selection5(pq *PriorityQueue) {
 	fmt.Printf("Please enter customer ID: ")
 	tempStr := getInput()
 	delID, _ := strconv.Atoi(tempStr)
-	cr := getCrByID(pq, delID)
+	cr, err := getCrByID(pq, delID)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	maxInt := int(^uint(0) >> 1)
 	cr.PriorityWeight = maxInt
 	heap.Fix(&pq.harr, cr.index)
 	_ = heap.Pop(&pq.harr).(*CustomerRequest)
+	pq.count--
 	fmt.Println("Reneged following customer request sucessfully:")
 	s5Struct := Selection5Struct{
 		CustomerName:  cr.CustomerName,
@@ -282,13 +303,23 @@ func selection5(pq *PriorityQueue) {
 
 func selection6(pq *PriorityQueue) {
 	status := "IN_SERVICE"
-	if len(pq.harr) >= pq.size {
+	if len(pq.harr) >= pq.capacity {
 		status = "MAX_CAPACITY_REACHED"
+	}
+	oldest, err := getOldestTaskID(pq)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	oldestCr, err := getCrByID(pq, oldest)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
 	queueInfo := QueueInfo{
 		Name:                           pq.queueName,
-		Size:                           string(pq.size),
-		OldestCustomerRequestTimeInSec: time.Since(getCrByID(pq, getOldestTaskID(pq)).EnqueueTime).Seconds()}
+		Size:                           strconv.Itoa(pq.count),
+		OldestCustomerRequestTimeInSec: time.Since(oldestCr.EnqueueTime).Seconds()}
 	s6Struct := Selection6Struct{
 		Status: status,
 		Queue:  queueInfo}
@@ -297,15 +328,34 @@ func selection6(pq *PriorityQueue) {
 	fmt.Println(string(jsonData))
 }
 
+func insert(pq *PriorityQueue, cr *CustomerRequest) bool {
+	if pq.count >= pq.capacity {
+		fmt.Printf("Capacity reached. Could not insert.\n\n")
+		return false
+	}
+	cr.ID = pq.key
+	pq.key++
+	if !pq.isInitialized {
+		pq.harr = make(Queue, 1)
+		pq.harr[0] = cr
+		heap.Init(&pq.harr)
+		pq.isInitialized = true
+	} else {
+		heap.Push(&pq.harr, cr)
+	}
+	fmt.Println(cr.ID, cr.PriorityWeight, cr.CustomerName, cr.Description, cr.EnqueueTime)
+	pq.count++
+	return true
+}
+
 // This example creates a Queue with some customerRequests, adds and manipulates an customerRequest,
 // and then removes the customerRequests in PriorityWeight order.
 func main() {
-	size := 15
-	ids, priorities := make([]int, 0), make([]int, 0)
+	size := 10
+	priorities := make([]int, 0)
 	names, descs := make([]string, 0), make([]string, 0)
 
-	for i := 0; i < 10; i++ {
-		ids = append(ids, i)
+	for i := 0; i < size; i++ {
 		priorities = append(priorities, rand.Intn(10)+1)
 		names = append(names, "one")
 		descs = append(descs, "")
@@ -314,32 +364,30 @@ func main() {
 	pq := PriorityQueue{
 		queueName:        "DefaultQueue",
 		queueDescription: "This queue is for demonstration of Priority Queue implementation",
-		size:             size,
-		count:            0}
+		capacity:         size,
+		key:              0,
+		count:            0,
+		isInitialized:    false}
 
 	// Create a priority queue, put the customerRequests in it, and
 	// establish the priority queue (heap) invariants.
-	pq.harr = make(Queue, 1)
 
-	for i := 0; i >= 0; i-- {
+	for i := size - 1; i >= 0; i-- {
 		cr := &CustomerRequest{
-			ID:             ids[i],
 			PriorityWeight: priorities[i],
 			CustomerName:   names[i],
 			Description:    descs[i],
 			EnqueueTime:    time.Now(),
 			index:          i,
 		}
-		fmt.Println(cr.ID, cr.PriorityWeight, cr.CustomerName, cr.Description, cr.EnqueueTime)
-		pq.harr[i] = cr
-		pq.count++
+		_ = insert(&pq, cr)
 		time.Sleep(500000000)
 	}
 	fmt.Println("")
+	printHeader()
 
-	heap.Init(&pq.harr)
-	printMenu()
 	for true {
+		printMenu()
 		c := getSelection()
 
 		switch c {
@@ -360,8 +408,9 @@ func main() {
 		case "0":
 			return
 		default:
-			fmt.Println("Invalid selection")
+			fmt.Printf("Invalid selection")
 		}
+		fmt.Println("")
 	}
 
 }
