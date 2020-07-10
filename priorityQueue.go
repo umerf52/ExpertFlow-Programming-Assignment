@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -52,6 +53,13 @@ type Selection3Struct struct {
 	PriorityWeight            int // The priority of the customerRequest in the queue.
 	EnqueueTime               time.Time
 	WaitTimeinSec             float64
+}
+
+type Selection4Struct struct {
+	CustomerName, Description string
+	PriorityWeight, ID        int // The priority of the customerRequest in the queue.
+	EnqueueTime               time.Time
+	PositionInQueue           int
 }
 
 func (q Queue) Len() int { return len(q) }
@@ -112,7 +120,7 @@ func printMenu() {
 	fmt.Println("")
 }
 
-func getInput() string {
+func getSelection() string {
 	fmt.Printf("Enter selection: ")
 	reader := bufio.NewReader(os.Stdin)
 	input, _ := reader.ReadString('\n')
@@ -184,6 +192,47 @@ func selection3(pq *PriorityQueue) {
 	fmt.Println(string(jsonData))
 }
 
+func getInput() (string, string, int) {
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Println("Please enter following information: ")
+	fmt.Printf("Customer Name: ")
+	scanner.Scan()
+	name := scanner.Text()
+	fmt.Printf("Description: ")
+	scanner.Scan()
+	desc := scanner.Text()
+	fmt.Printf("Priority Weight: ")
+	scanner.Scan()
+	priorityStr := scanner.Text()
+	priorityInt, _ := strconv.Atoi(priorityStr)
+	fmt.Println("")
+	return name, desc, priorityInt
+}
+
+func selection4(pq *PriorityQueue) {
+	name, desc, priority := getInput()
+	cr := &CustomerRequest{
+		ID:             len(pq.harr),
+		PriorityWeight: priority,
+		CustomerName:   name,
+		Description:    desc,
+		EnqueueTime:    time.Now(),
+		index:          len(pq.harr),
+	}
+	heap.Push(&pq.harr, cr)
+	fmt.Println("Customer Request is enqueued with following information:")
+
+	s4Struct := Selection4Struct{ID: cr.ID,
+		PriorityWeight:  cr.PriorityWeight,
+		CustomerName:    cr.CustomerName,
+		Description:     cr.Description,
+		EnqueueTime:     cr.EnqueueTime,
+		PositionInQueue: len(pq.harr) - 1}
+
+	jsonData, _ := json.MarshalIndent(s4Struct, "", "    ")
+	fmt.Println(string(jsonData))
+}
+
 // This example creates a Queue with some customerRequests, adds and manipulates an customerRequest,
 // and then removes the customerRequests in PriorityWeight order.
 func main() {
@@ -223,7 +272,7 @@ func main() {
 	heap.Init(&pq.harr)
 	printMenu()
 	for true {
-		c := getInput()
+		c := getSelection()
 
 		switch c {
 		case "1":
@@ -232,6 +281,8 @@ func main() {
 			selection2(&pq)
 		case "3":
 			selection3(&pq)
+		case "4":
+			selection4(&pq)
 		case "8":
 			printMenu()
 		case "0":
