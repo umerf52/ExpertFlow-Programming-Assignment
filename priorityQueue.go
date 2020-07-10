@@ -14,8 +14,8 @@ import (
 // An CustomerRequest is something we manage in a priority queue.
 type CustomerRequest struct {
 	ID                        int
-	CustomerName, Description string // The value of the customerRequest; arbitrary.
-	PriorityWeight            int    // The priority of the customerRequest in the queue.
+	CustomerName, Description string
+	PriorityWeight            int // The priority of the customerRequest in the queue.
 	EnqueueTime               time.Time
 	// The index is needed by update and is maintained by the heap.Interface methods.
 	index int // The index of the customerRequest in the heap.
@@ -44,6 +44,14 @@ type Selection2Struct struct {
 	QueueName, QueueDescription string
 	Size, OldestTaskID          int
 	CustomerRequests            []*CustomerRequest
+}
+
+type Selection3Struct struct {
+	ID                        int
+	CustomerName, Description string
+	PriorityWeight            int // The priority of the customerRequest in the queue.
+	EnqueueTime               time.Time
+	WaitTimeinSec             float64
 }
 
 func (q Queue) Len() int { return len(q) }
@@ -162,6 +170,20 @@ func selection2(pq *PriorityQueue) {
 	fmt.Println(string(jsonData))
 }
 
+func selection3(pq *PriorityQueue) {
+	fmt.Println("Dequeuing Customer Request")
+	cr := heap.Pop(&pq.harr).(*CustomerRequest)
+	s3Struct := Selection3Struct{ID: cr.ID,
+		PriorityWeight: cr.PriorityWeight,
+		CustomerName:   cr.CustomerName,
+		Description:    cr.Description,
+		EnqueueTime:    cr.EnqueueTime,
+		WaitTimeinSec:  time.Since(cr.EnqueueTime).Seconds()}
+
+	jsonData, _ := json.MarshalIndent(s3Struct, "", "    ")
+	fmt.Println(string(jsonData))
+}
+
 // This example creates a Queue with some customerRequests, adds and manipulates an customerRequest,
 // and then removes the customerRequests in PriorityWeight order.
 func main() {
@@ -208,6 +230,8 @@ func main() {
 			selection1(&pq)
 		case "2":
 			selection2(&pq)
+		case "3":
+			selection3(&pq)
 		case "8":
 			printMenu()
 		case "0":
