@@ -7,11 +7,25 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/gorilla/mux"
 )
+
+// Globals
+var SIZE = 10
+var PQ = PriorityQueue{
+	queueName:        "DefaultQueue",
+	queueDescription: "This queue is for demonstration of Priority Queue implementation",
+	capacity:         SIZE,
+	key:              0,
+	count:            0,
+	isInitialized:    false}
 
 // An CustomerRequest is something we manage in a priority queue.
 type CustomerRequest struct {
@@ -35,13 +49,15 @@ type PriorityQueue struct {
 }
 
 type IDJSON struct {
-	ID int
+	ID int `json:"id"`
 }
 
 type Selection1Struct struct {
-	QueueName, QueueDescription string
-	Size, OldestTaskID          int
-	CustomerRequests            []IDJSON
+	QueueName        string   `json:"queueName"`
+	QueueDescription string   `json:"queueDescription"`
+	Size             int      `json:"size"`
+	OldestTaskID     int      `json:"oldestTaskID"`
+	CustomerRequests []IDJSON `json:"customerRequests"`
 }
 
 type Selection2Struct struct {
@@ -167,7 +183,7 @@ func getOldestTaskID(pq *PriorityQueue) (int, error) {
 	return oldestID, nil
 }
 
-func selection1(pq *PriorityQueue) {
+func selection1(pq *PriorityQueue, isConsole bool) Selection1Struct {
 	tempArray := make([]IDJSON, 0)
 	for i := 0; i < len(pq.harr); i++ {
 		tempArray = append(tempArray, IDJSON{ID: pq.harr[i].ID})
@@ -179,8 +195,11 @@ func selection1(pq *PriorityQueue) {
 		OldestTaskID:     oldest,
 		CustomerRequests: tempArray}
 
-	jsonData, _ := json.MarshalIndent(s1Struct, "", "    ")
-	fmt.Println(string(jsonData))
+	if isConsole {
+		jsonData, _ := json.MarshalIndent(s1Struct, "", "    ")
+		fmt.Println(string(jsonData))
+	}
+	return s1Struct
 }
 
 func selection2(pq *PriorityQueue) {
@@ -348,31 +367,43 @@ func insert(pq *PriorityQueue, cr *CustomerRequest) bool {
 	return true
 }
 
+func api1(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Endpoint Hit: /api/v1.0/queue/list")
+	selection1 := selection1(&PQ, false)
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "    ")
+	enc.Encode(selection1)
+}
+
+func handleRequests() {
+	// creates a new instance of a mux router
+	myRouter := mux.NewRouter().StrictSlash(true)
+	// replace http.HandleFunc with myRouter.HandleFunc
+	myRouter.HandleFunc("/api/v1.0/queue/list", api1)
+	// finally, instead of passing in nil, we want
+	// to pass in our newly created router as the second
+	// argument
+	log.Fatal(http.ListenAndServe(":10000", myRouter))
+}
+
 // This example creates a Queue with some customerRequests, adds and manipulates an customerRequest,
 // and then removes the customerRequests in PriorityWeight order.
 func main() {
-	size := 10
+	go handleRequests()
 	priorities := make([]int, 0)
 	names, descs := make([]string, 0), make([]string, 0)
 
-	for i := 0; i < size; i++ {
+	for i := 0; i < SIZE; i++ {
 		priorities = append(priorities, rand.Intn(10)+1)
 		names = append(names, "one")
 		descs = append(descs, "")
 	}
 
-	pq := PriorityQueue{
-		queueName:        "DefaultQueue",
-		queueDescription: "This queue is for demonstration of Priority Queue implementation",
-		capacity:         size,
-		key:              0,
-		count:            0,
-		isInitialized:    false}
-
 	// Create a priority queue, put the customerRequests in it, and
 	// establish the priority queue (heap) invariants.
 
-	for i := size - 1; i >= 0; i-- {
+	for i := SIZE - 1; i >= 0; i-- {
 		cr := &CustomerRequest{
 			PriorityWeight: priorities[i],
 			CustomerName:   names[i],
@@ -380,7 +411,7 @@ func main() {
 			EnqueueTime:    time.Now(),
 			index:          i,
 		}
-		_ = insert(&pq, cr)
+		_ = insert(&PQ, cr)
 		time.Sleep(500000000)
 	}
 	fmt.Println("")
@@ -392,17 +423,17 @@ func main() {
 
 		switch c {
 		case "1":
-			selection1(&pq)
+			_ = selection1(&PQ, true)
 		case "2":
-			selection2(&pq)
+			selection2(&PQ)
 		case "3":
-			selection3(&pq)
+			selection3(&PQ)
 		case "4":
-			selection4(&pq)
+			selection4(&PQ)
 		case "5":
-			selection5(&pq)
+			selection5(&PQ)
 		case "6":
-			selection6(&pq)
+			selection6(&PQ)
 		case "8":
 			printMenu()
 		case "0":
