@@ -29,7 +29,7 @@ type Queue []*CustomerRequest
 type PriorityQueue struct {
 	harr                        Queue
 	queueName, queueDescription string
-	count                       int
+	size, count                 int
 }
 
 type IDJSON struct {
@@ -69,6 +69,16 @@ type Selection5Struct struct {
 	EnqueueTime   time.Time
 	WaitTimeinSec float64
 	Message       string
+}
+
+type QueueInfo struct {
+	Name, Size                     string
+	OldestCustomerRequestTimeInSec float64
+}
+
+type Selection6Struct struct {
+	Status string
+	Queue  QueueInfo
 }
 
 func (q Queue) Len() int { return len(q) }
@@ -240,17 +250,20 @@ func selection4(pq *PriorityQueue) {
 	fmt.Println(string(jsonData))
 }
 
+func getCrByID(pq *PriorityQueue, ID int) *CustomerRequest {
+	for i := 0; i < len(pq.harr); i++ {
+		if pq.harr[i].ID == ID {
+			return pq.harr[i]
+		}
+	}
+	return nil
+}
+
 func selection5(pq *PriorityQueue) {
 	fmt.Printf("Please enter customer ID: ")
 	tempStr := getInput()
 	delID, _ := strconv.Atoi(tempStr)
-	cr := &CustomerRequest{}
-	for i := 0; i < len(pq.harr); i++ {
-		if pq.harr[i].ID == delID {
-			cr = pq.harr[i]
-			break
-		}
-	}
+	cr := getCrByID(pq, delID)
 	maxInt := int(^uint(0) >> 1)
 	cr.PriorityWeight = maxInt
 	heap.Fix(&pq.harr, cr.index)
@@ -267,9 +280,27 @@ func selection5(pq *PriorityQueue) {
 	fmt.Println(string(jsonData))
 }
 
+func selection6(pq *PriorityQueue) {
+	status := "IN_SERVICE"
+	if len(pq.harr) >= pq.size {
+		status = "MAX_CAPACITY_REACHED"
+	}
+	queueInfo := QueueInfo{
+		Name:                           pq.queueName,
+		Size:                           string(pq.size),
+		OldestCustomerRequestTimeInSec: time.Since(getCrByID(pq, getOldestTaskID(pq)).EnqueueTime).Seconds()}
+	s6Struct := Selection6Struct{
+		Status: status,
+		Queue:  queueInfo}
+
+	jsonData, _ := json.MarshalIndent(s6Struct, "", "    ")
+	fmt.Println(string(jsonData))
+}
+
 // This example creates a Queue with some customerRequests, adds and manipulates an customerRequest,
 // and then removes the customerRequests in PriorityWeight order.
 func main() {
+	size := 15
 	ids, priorities := make([]int, 0), make([]int, 0)
 	names, descs := make([]string, 0), make([]string, 0)
 
@@ -283,13 +314,14 @@ func main() {
 	pq := PriorityQueue{
 		queueName:        "DefaultQueue",
 		queueDescription: "This queue is for demonstration of Priority Queue implementation",
+		size:             size,
 		count:            0}
 
 	// Create a priority queue, put the customerRequests in it, and
 	// establish the priority queue (heap) invariants.
-	pq.harr = make(Queue, 10)
+	pq.harr = make(Queue, 1)
 
-	for i := 9; i >= 0; i-- {
+	for i := 0; i >= 0; i-- {
 		cr := &CustomerRequest{
 			ID:             ids[i],
 			PriorityWeight: priorities[i],
@@ -321,6 +353,8 @@ func main() {
 			selection4(&pq)
 		case "5":
 			selection5(&pq)
+		case "6":
+			selection6(&pq)
 		case "8":
 			printMenu()
 		case "0":
