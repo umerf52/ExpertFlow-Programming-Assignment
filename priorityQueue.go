@@ -29,10 +29,11 @@ var PQ = PriorityQueue{
 
 // An CustomerRequest is something we manage in a priority queue.
 type CustomerRequest struct {
-	ID                        int
-	CustomerName, Description string
-	PriorityWeight            int // The priority of the customerRequest in the queue.
-	EnqueueTime               time.Time
+	ID             int       `json:"id"`
+	CustomerName   string    `json:"customerName"`
+	Description    string    `json:"description"`
+	PriorityWeight int       `json:"priorityWeight"`
+	EnqueueTime    time.Time `json:"enqueueTime"`
 	// The index is needed by update and is maintained by the heap.Interface methods.
 	index int // The index of the customerRequest in the heap.
 }
@@ -56,27 +57,30 @@ type Selection1Struct struct {
 	QueueName        string   `json:"queueName"`
 	QueueDescription string   `json:"queueDescription"`
 	Size             int      `json:"size"`
-	OldestTaskID     int      `json:"oldestTaskID"`
+	OldestTaskID     int      `json:"oldestTaskId"`
 	CustomerRequests []IDJSON `json:"customerRequests"`
 }
 
 type Selection2Struct struct {
-	QueueName, QueueDescription string
-	Size, OldestTaskID          int
-	CustomerRequests            []*CustomerRequest
+	QueueName        string             `json:"queueName"`
+	QueueDescription string             `json:"queueDescription"`
+	Size             int                `json:"size"`
+	OldestTaskID     int                `json:"oldestTaskId"`
+	CustomerRequests []*CustomerRequest `json:"customerRequests"`
 }
 
 type Selection3Struct struct {
-	ID                        int
-	CustomerName, Description string
-	PriorityWeight            int // The priority of the customerRequest in the queue.
-	EnqueueTime               time.Time
-	WaitTimeinSec             float64
+	ID             int       `json:"id"`
+	CustomerName   string    `json:"customerName"`
+	Description    string    `json:"description"`
+	PriorityWeight int       `json:"priorityWeight"`
+	EnqueueTime    time.Time `json:"enqueueTime"`
+	WaitTimeinSec  float64   `json:"waitTimeinSec"`
 }
 
 type Selection4Struct struct {
 	CustomerName, Description string
-	PriorityWeight, ID        int // The priority of the customerRequest in the queue.
+	PriorityWeight, ID        int
 	EnqueueTime               time.Time
 	PositionInQueue           int
 }
@@ -90,13 +94,18 @@ type Selection5Struct struct {
 }
 
 type QueueInfo struct {
-	Name, Size                     string
-	OldestCustomerRequestTimeInSec float64
+	Name                           string  `json:"name"`
+	Size                           string  `json:"size"`
+	OldestCustomerRequestTimeInSec float64 `json:"oldestCustomerRequestTimeInSec"`
 }
 
 type Selection6Struct struct {
-	Status string
-	Queue  QueueInfo
+	Status string    `json:"status"`
+	Queue  QueueInfo `json:"queue"`
+}
+
+type ErrorStruct struct {
+	Msg string `json:"message"`
 }
 
 func (q Queue) Len() int { return len(q) }
@@ -169,7 +178,7 @@ func getSelection() string {
 
 func getOldestTaskID(pq *PriorityQueue) (int, error) {
 	if pq.count <= 0 {
-		return -1, errors.New("Queue is empty.")
+		return -1, errors.New("queue is empty")
 	}
 	oldestID := pq.harr[0].ID
 	oldestTime := pq.harr[0].EnqueueTime
@@ -202,8 +211,7 @@ func selection1(pq *PriorityQueue, isConsole bool) Selection1Struct {
 	return s1Struct
 }
 
-func selection2(pq *PriorityQueue) {
-	fmt.Println("Printing List of Customer Details in Queue")
+func selection2(pq *PriorityQueue, isConsole bool) Selection2Struct {
 	tempArray := make([]*CustomerRequest, 0)
 	for i := 0; i < len(pq.harr); i++ {
 		cr := &CustomerRequest{
@@ -223,16 +231,22 @@ func selection2(pq *PriorityQueue) {
 		OldestTaskID:     oldest,
 		CustomerRequests: tempArray}
 
-	jsonData, _ := json.MarshalIndent(s2Struct, "", "    ")
-	fmt.Println(string(jsonData))
+	if isConsole {
+		fmt.Println("Printing List of Customer Details in Queue")
+		jsonData, _ := json.MarshalIndent(s2Struct, "", "    ")
+		fmt.Println(string(jsonData))
+	}
+	return s2Struct
 }
 
-func selection3(pq *PriorityQueue) {
+func selection3(pq *PriorityQueue, isConsole bool) (Selection3Struct, ErrorStruct, error) {
 	if pq.count <= 0 {
-		fmt.Println("Queue is empty.")
-		return
+		errorMsg := "Queue is empty."
+		if isConsole {
+			fmt.Println(errorMsg)
+		}
+		return Selection3Struct{}, ErrorStruct{Msg: errorMsg}, errors.New(errorMsg)
 	}
-	fmt.Println("Dequeuing Customer Request")
 	cr := heap.Pop(&pq.harr).(*CustomerRequest)
 	pq.count--
 	s3Struct := Selection3Struct{ID: cr.ID,
@@ -242,8 +256,12 @@ func selection3(pq *PriorityQueue) {
 		EnqueueTime:    cr.EnqueueTime,
 		WaitTimeinSec:  time.Since(cr.EnqueueTime).Seconds()}
 
-	jsonData, _ := json.MarshalIndent(s3Struct, "", "    ")
-	fmt.Println(string(jsonData))
+	if isConsole {
+		fmt.Println("Dequeuing Customer Request")
+		jsonData, _ := json.MarshalIndent(s3Struct, "", "    ")
+		fmt.Println(string(jsonData))
+	}
+	return s3Struct, ErrorStruct{}, nil
 }
 
 func getInput() string {
@@ -320,20 +338,24 @@ func selection5(pq *PriorityQueue) {
 	fmt.Println(string(jsonData))
 }
 
-func selection6(pq *PriorityQueue) {
+func selection6(pq *PriorityQueue, isConsole bool) (Selection6Struct, ErrorStruct, error) {
 	status := "IN_SERVICE"
 	if len(pq.harr) >= pq.capacity {
 		status = "MAX_CAPACITY_REACHED"
 	}
 	oldest, err := getOldestTaskID(pq)
 	if err != nil {
-		fmt.Println(err)
-		return
+		if isConsole {
+			fmt.Println(err)
+		}
+		return Selection6Struct{}, ErrorStruct{Msg: err.Error()}, errors.New(err.Error())
 	}
 	oldestCr, err := getCrByID(pq, oldest)
 	if err != nil {
-		fmt.Println(err)
-		return
+		if isConsole {
+			fmt.Println(err)
+		}
+		return Selection6Struct{}, ErrorStruct{Msg: err.Error()}, errors.New(err.Error())
 	}
 	queueInfo := QueueInfo{
 		Name:                           pq.queueName,
@@ -343,8 +365,11 @@ func selection6(pq *PriorityQueue) {
 		Status: status,
 		Queue:  queueInfo}
 
-	jsonData, _ := json.MarshalIndent(s6Struct, "", "    ")
-	fmt.Println(string(jsonData))
+	if isConsole {
+		jsonData, _ := json.MarshalIndent(s6Struct, "", "    ")
+		fmt.Println(string(jsonData))
+	}
+	return s6Struct, ErrorStruct{}, nil
 }
 
 func insert(pq *PriorityQueue, cr *CustomerRequest) bool {
@@ -369,11 +394,46 @@ func insert(pq *PriorityQueue, cr *CustomerRequest) bool {
 
 func api1(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Endpoint Hit: /api/v1.0/queue/list")
-	selection1 := selection1(&PQ, false)
+	s1Struct := selection1(&PQ, false)
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "    ")
-	enc.Encode(selection1)
+	enc.Encode(s1Struct)
+}
+
+func api2(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Endpoint Hit: /api/v1.0/queue/detail")
+	s2Struct := selection2(&PQ, false)
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "    ")
+	enc.Encode(s2Struct)
+}
+
+func api3(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Endpoint Hit: /api/v1.0/queue/service")
+	w.Header().Set("Content-Type", "application/json")
+	s3Struct, errorStruct, err := selection3(&PQ, false)
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "    ")
+	if err != nil {
+		enc.Encode(errorStruct)
+	} else {
+		enc.Encode(s3Struct)
+	}
+}
+
+func api6(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Endpoint Hit: /api/v1.0/SystemInfo")
+	w.Header().Set("Content-Type", "application/json")
+	s6Struct, errorStruct, err := selection6(&PQ, false)
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "    ")
+	if err != nil {
+		enc.Encode(errorStruct)
+	} else {
+		enc.Encode(s6Struct)
+	}
 }
 
 func handleRequests() {
@@ -381,6 +441,9 @@ func handleRequests() {
 	myRouter := mux.NewRouter().StrictSlash(true)
 	// replace http.HandleFunc with myRouter.HandleFunc
 	myRouter.HandleFunc("/api/v1.0/queue/list", api1)
+	myRouter.HandleFunc("/api/v1.0/queue/detail", api2)
+	myRouter.HandleFunc("/api/v1.0/queue/service", api3)
+	myRouter.HandleFunc("/api/v1.0/SystemInfo", api6)
 	// finally, instead of passing in nil, we want
 	// to pass in our newly created router as the second
 	// argument
@@ -425,15 +488,15 @@ func main() {
 		case "1":
 			_ = selection1(&PQ, true)
 		case "2":
-			selection2(&PQ)
+			_ = selection2(&PQ, true)
 		case "3":
-			selection3(&PQ)
+			selection3(&PQ, true)
 		case "4":
 			selection4(&PQ)
 		case "5":
 			selection5(&PQ)
 		case "6":
-			selection6(&PQ)
+			selection6(&PQ, true)
 		case "8":
 			printMenu()
 		case "0":
