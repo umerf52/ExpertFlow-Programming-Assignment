@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -79,18 +80,20 @@ type Selection3Struct struct {
 }
 
 type Selection4Struct struct {
-	CustomerName, Description string
-	PriorityWeight, ID        int
-	EnqueueTime               time.Time
-	PositionInQueue           int
+	CustomerName    string    `json:"customerName"`
+	Description     string    `json:"description"`
+	PriorityWeight  int       `json:"priorityWeight"`
+	ID              int       `json:"id"`
+	EnqueueTime     time.Time `json:"enqueueTime"`
+	PositionInQueue int       `json:"positionInQueue"`
 }
 
 type Selection5Struct struct {
-	CustomerName  string
-	ID            int
-	EnqueueTime   time.Time
-	WaitTimeinSec float64
-	Message       string
+	CustomerName  string    `json:"customerName"`
+	ID            int       `json:"id"`
+	EnqueueTime   time.Time `json:"enqueueTime"`
+	WaitTimeinSec float64   `json:"waitTimeinSec"`
+	Message       string    `json:"message"`
 }
 
 type QueueInfo struct {
@@ -106,6 +109,11 @@ type Selection6Struct struct {
 
 type ErrorStruct struct {
 	Msg string `json:"message"`
+}
+
+type Selection4ErrorStruct struct {
+	Error string `json:"error"`
+	Msg   string `json:"message"`
 }
 
 func (q Queue) Len() int { return len(q) }
@@ -271,27 +279,11 @@ func getInput() string {
 	return temp
 }
 
-func selection4(pq *PriorityQueue) {
-	fmt.Println("Please enter following information: ")
-	fmt.Printf("Customer Name: ")
-	name := getInput()
-	fmt.Printf("Description: ")
-	desc := getInput()
-	fmt.Printf("Priority Weight: ")
-	priorityStr := getInput()
-	priorityInt, _ := strconv.Atoi(priorityStr)
-	cr := &CustomerRequest{
-		PriorityWeight: priorityInt,
-		CustomerName:   name,
-		Description:    desc,
-		EnqueueTime:    time.Now(),
-		index:          len(pq.harr),
-	}
-	if !insert(pq, cr) {
-		return
+func selection4(pq *PriorityQueue, cr *CustomerRequest, isConsole bool) (Selection4Struct, error) {
+	if !insert(pq, cr, isConsole) {
+		return Selection4Struct{}, errors.New("The system is working at its peak capacity, please try again later.")
 	}
 
-	fmt.Printf("\nCustomer Request is enqueued with following information:\n")
 	s4Struct := Selection4Struct{ID: cr.ID,
 		PriorityWeight:  cr.PriorityWeight,
 		CustomerName:    cr.CustomerName,
@@ -299,8 +291,12 @@ func selection4(pq *PriorityQueue) {
 		EnqueueTime:     cr.EnqueueTime,
 		PositionInQueue: len(pq.harr) - 1}
 
-	jsonData, _ := json.MarshalIndent(s4Struct, "", "    ")
-	fmt.Println(string(jsonData))
+	if isConsole {
+		fmt.Printf("\nCustomer Request is enqueued with following information:\n")
+		jsonData, _ := json.MarshalIndent(s4Struct, "", "    ")
+		fmt.Println(string(jsonData))
+	}
+	return s4Struct, nil
 }
 
 func getCrByID(pq *PriorityQueue, ID int) (*CustomerRequest, error) {
@@ -375,12 +371,15 @@ func selection6(pq *PriorityQueue, isConsole bool) (Selection6Struct, ErrorStruc
 	return s6Struct, ErrorStruct{}, nil
 }
 
-func insert(pq *PriorityQueue, cr *CustomerRequest) bool {
+func insert(pq *PriorityQueue, cr *CustomerRequest, isConsole bool) bool {
 	if pq.count >= pq.capacity {
-		fmt.Printf("Capacity reached. Could not insert.\n\n")
+		if isConsole {
+			fmt.Printf("Capacity reached. Could not insert.\n\n")
+		}
 		return false
 	}
 	cr.ID = pq.key
+	cr.index = len(pq.harr)
 	pq.key++
 	if !pq.isInitialized {
 		pq.harr = make(Queue, 1)
@@ -390,7 +389,9 @@ func insert(pq *PriorityQueue, cr *CustomerRequest) bool {
 	} else {
 		heap.Push(&pq.harr, cr)
 	}
-	fmt.Println(cr.ID, cr.PriorityWeight, cr.CustomerName, cr.Description, cr.EnqueueTime)
+	if isConsole {
+		fmt.Println(cr.ID, cr.PriorityWeight, cr.CustomerName, cr.Description, cr.EnqueueTime)
+	}
 	pq.count++
 	return true
 }
@@ -423,6 +424,28 @@ func api3(w http.ResponseWriter, r *http.Request) {
 		enc.Encode(errorStruct)
 	} else {
 		enc.Encode(s3Struct)
+	}
+}
+
+func api4(w http.ResponseWriter, r *http.Request) {
+	tempTime := time.Now()
+	fmt.Println("Endpoint Hit: /api/v1.0/queue/enqueue")
+	enc := json.NewEncoder(w)
+	w.Header().Set("Content-Type", "application/json")
+	enc.SetIndent("", "    ")
+
+	// get the body of our POST request
+	reqBody, _ := ioutil.ReadAll(r.Body)
+	cr := CustomerRequest{}
+	json.Unmarshal(reqBody, &cr)
+	cr.EnqueueTime = tempTime
+
+	s4Struct, err := selection4(&PQ, &cr, false)
+	if err != nil {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		enc.Encode(Selection4ErrorStruct{Error: "MAX_CAPACITY_REACHED", Msg: err.Error()})
+	} else {
+		enc.Encode(s4Struct)
 	}
 }
 
@@ -468,6 +491,7 @@ func handleRequests() {
 	myRouter.HandleFunc("/api/v1.0/queue/list", api1)
 	myRouter.HandleFunc("/api/v1.0/queue/detail", api2)
 	myRouter.HandleFunc("/api/v1.0/queue/service", api3)
+	myRouter.HandleFunc("/api/v1.0/queue/enqueue", api4).Methods("POST")
 	myRouter.HandleFunc("/api/v1.0/queue/renege/{id}", api5).Methods("DELETE")
 	myRouter.HandleFunc("/api/v1.0/SystemInfo", api6)
 	// finally, instead of passing in nil, we want
@@ -500,7 +524,7 @@ func main() {
 			EnqueueTime:    time.Now(),
 			index:          i,
 		}
-		_ = insert(&PQ, cr)
+		_ = insert(&PQ, cr, true)
 		time.Sleep(500000000)
 	}
 	fmt.Println("")
@@ -518,7 +542,21 @@ func main() {
 		case "3":
 			selection3(&PQ, true)
 		case "4":
-			selection4(&PQ)
+			fmt.Println("Please enter following information: ")
+			fmt.Printf("Customer Name: ")
+			name := getInput()
+			fmt.Printf("Description: ")
+			desc := getInput()
+			fmt.Printf("Priority Weight: ")
+			priorityStr := getInput()
+			priorityInt, _ := strconv.Atoi(priorityStr)
+			cr := &CustomerRequest{
+				PriorityWeight: priorityInt,
+				CustomerName:   name,
+				Description:    desc,
+				EnqueueTime:    time.Now(),
+			}
+			_, _ = selection4(&PQ, cr, true)
 		case "5":
 			fmt.Printf("Please enter customer ID: ")
 			tempStr := getInput()
