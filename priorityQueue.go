@@ -309,24 +309,23 @@ func getCrByID(pq *PriorityQueue, ID int) (*CustomerRequest, error) {
 			return pq.harr[i], nil
 		}
 	}
-	return nil, errors.New("ID not found.")
+	return nil, errors.New("id not found")
 }
 
-func selection5(pq *PriorityQueue) {
-	fmt.Printf("Please enter customer ID: ")
-	tempStr := getInput()
-	delID, _ := strconv.Atoi(tempStr)
+func selection5(pq *PriorityQueue, delID int, isConsole bool) (Selection5Struct, error) {
 	cr, err := getCrByID(pq, delID)
 	if err != nil {
-		fmt.Println(err)
-		return
+		if isConsole {
+			fmt.Println(err)
+		}
+		return Selection5Struct{}, errors.New(err.Error())
 	}
-	maxInt := int(^uint(0) >> 1)
+	maxInt := int(^uint(0) >> 1) // Make a MAX_INT
 	cr.PriorityWeight = maxInt
 	heap.Fix(&pq.harr, cr.index)
 	_ = heap.Pop(&pq.harr).(*CustomerRequest)
 	pq.count--
-	fmt.Println("Reneged following customer request sucessfully:")
+
 	s5Struct := Selection5Struct{
 		CustomerName:  cr.CustomerName,
 		ID:            cr.ID,
@@ -334,8 +333,12 @@ func selection5(pq *PriorityQueue) {
 		WaitTimeinSec: time.Since(cr.EnqueueTime).Seconds(),
 		Message:       "Request reneged successfully"}
 
-	jsonData, _ := json.MarshalIndent(s5Struct, "", "    ")
-	fmt.Println(string(jsonData))
+	if isConsole {
+		fmt.Println("Reneged following customer request sucessfully:")
+		jsonData, _ := json.MarshalIndent(s5Struct, "", "    ")
+		fmt.Println(string(jsonData))
+	}
+	return s5Struct, nil
 }
 
 func selection6(pq *PriorityQueue, isConsole bool) (Selection6Struct, ErrorStruct, error) {
@@ -423,6 +426,28 @@ func api3(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func api5(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Endpoint Hit: /api/v1.0/queue/renege/")
+	enc := json.NewEncoder(w)
+	w.Header().Set("Content-Type", "application/json")
+	enc.SetIndent("", "    ")
+
+	// once again, we will need to parse the path parameters
+	vars := mux.Vars(r)
+	// we will need to extract the `id` of the article we
+	// wish to delete
+	idStr := vars["id"]
+	idInt, _ := strconv.Atoi(idStr)
+
+	s5Struct, err := selection5(&PQ, idInt, false)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		enc.Encode(ErrorStruct{Msg: err.Error()})
+	} else {
+		enc.Encode(s5Struct)
+	}
+}
+
 func api6(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Endpoint Hit: /api/v1.0/SystemInfo")
 	w.Header().Set("Content-Type", "application/json")
@@ -443,6 +468,7 @@ func handleRequests() {
 	myRouter.HandleFunc("/api/v1.0/queue/list", api1)
 	myRouter.HandleFunc("/api/v1.0/queue/detail", api2)
 	myRouter.HandleFunc("/api/v1.0/queue/service", api3)
+	myRouter.HandleFunc("/api/v1.0/queue/renege/{id}", api5).Methods("DELETE")
 	myRouter.HandleFunc("/api/v1.0/SystemInfo", api6)
 	// finally, instead of passing in nil, we want
 	// to pass in our newly created router as the second
@@ -494,7 +520,10 @@ func main() {
 		case "4":
 			selection4(&PQ)
 		case "5":
-			selection5(&PQ)
+			fmt.Printf("Please enter customer ID: ")
+			tempStr := getInput()
+			delID, _ := strconv.Atoi(tempStr)
+			_, _ = selection5(&PQ, delID, true)
 		case "6":
 			selection6(&PQ, true)
 		case "8":
