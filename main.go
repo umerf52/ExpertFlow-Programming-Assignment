@@ -27,6 +27,7 @@ var PQ = PriorityQueue{
 	key:              0,
 	count:            0,
 	isInitialized:    false}
+var logger = initLogger()
 
 // An CustomerRequest is something we manage in a priority queue.
 type CustomerRequest struct {
@@ -171,8 +172,7 @@ func printMenu() {
 	fmt.Println("4. Enqueue Customer Request")
 	fmt.Println("5. Renege Customer Request")
 	fmt.Println("6. System Information")
-	fmt.Println("7. System Memory Dump")
-	fmt.Println("8. Reprint Menu")
+	fmt.Println("9. Reprint Menu")
 	fmt.Println("0. Exit")
 	fmt.Println("")
 }
@@ -201,6 +201,7 @@ func getOldestTaskID(pq *PriorityQueue) (int, error) {
 }
 
 func selection1(pq *PriorityQueue, isConsole bool) Selection1Struct {
+	logger.Printf("getting selection 1, isConsole: %t", isConsole)
 	tempArray := make([]IDJSON, 0)
 	for i := 0; i < len(pq.harr); i++ {
 		tempArray = append(tempArray, IDJSON{ID: pq.harr[i].ID})
@@ -216,10 +217,12 @@ func selection1(pq *PriorityQueue, isConsole bool) Selection1Struct {
 		jsonData, _ := json.MarshalIndent(s1Struct, "", "    ")
 		fmt.Println(string(jsonData))
 	}
+	logger.Printf("returning selection 1, isConsole: %t", isConsole)
 	return s1Struct
 }
 
 func selection2(pq *PriorityQueue, isConsole bool) Selection2Struct {
+	logger.Printf("getting selection 2, isConsole: %t", isConsole)
 	tempArray := make([]*CustomerRequest, 0)
 	for i := 0; i < len(pq.harr); i++ {
 		cr := &CustomerRequest{
@@ -244,15 +247,19 @@ func selection2(pq *PriorityQueue, isConsole bool) Selection2Struct {
 		jsonData, _ := json.MarshalIndent(s2Struct, "", "    ")
 		fmt.Println(string(jsonData))
 	}
+	logger.Printf("returning selection 2, isConsole: %t", isConsole)
 	return s2Struct
 }
 
 func selection3(pq *PriorityQueue, isConsole bool) (Selection3Struct, ErrorStruct, error) {
+	logger.Printf("getting selection 3, isConsole: %t", isConsole)
 	if pq.count <= 0 {
 		errorMsg := "Queue is empty."
 		if isConsole {
 			fmt.Println(errorMsg)
 		}
+		logger.Printf("error getting selection 3. %s isConsole: %t", errorMsg, isConsole)
+
 		return Selection3Struct{}, ErrorStruct{Msg: errorMsg}, errors.New(errorMsg)
 	}
 	cr := heap.Pop(&pq.harr).(*CustomerRequest)
@@ -269,6 +276,7 @@ func selection3(pq *PriorityQueue, isConsole bool) (Selection3Struct, ErrorStruc
 		jsonData, _ := json.MarshalIndent(s3Struct, "", "    ")
 		fmt.Println(string(jsonData))
 	}
+	logger.Printf("returning selection 3, isConsole: %t", isConsole)
 	return s3Struct, ErrorStruct{}, nil
 }
 
@@ -280,8 +288,11 @@ func getInput() string {
 }
 
 func selection4(pq *PriorityQueue, cr *CustomerRequest, isConsole bool) (Selection4Struct, error) {
+	logger.Printf("getting selection 4, isConsole: %t", isConsole)
 	if !insert(pq, cr, isConsole) {
-		return Selection4Struct{}, errors.New("The system is working at its peak capacity, please try again later.")
+		errorMsg := "The system is working at its peak capacity, please try again later."
+		logger.Printf("error getting selection 4. %s isConsole: %t", errorMsg, isConsole)
+		return Selection4Struct{}, errors.New(errorMsg)
 	}
 
 	s4Struct := Selection4Struct{ID: cr.ID,
@@ -296,6 +307,7 @@ func selection4(pq *PriorityQueue, cr *CustomerRequest, isConsole bool) (Selecti
 		jsonData, _ := json.MarshalIndent(s4Struct, "", "    ")
 		fmt.Println(string(jsonData))
 	}
+	logger.Printf("returning selection 4, isConsole: %t", isConsole)
 	return s4Struct, nil
 }
 
@@ -305,15 +317,18 @@ func getCrByID(pq *PriorityQueue, ID int) (*CustomerRequest, error) {
 			return pq.harr[i], nil
 		}
 	}
+	logger.Printf("id %d not found", ID)
 	return nil, errors.New("id not found")
 }
 
 func selection5(pq *PriorityQueue, delID int, isConsole bool) (Selection5Struct, error) {
+	logger.Printf("getting selection 5, isConsole: %t", isConsole)
 	cr, err := getCrByID(pq, delID)
 	if err != nil {
 		if isConsole {
 			fmt.Println(err)
 		}
+		logger.Printf("error getting selection 5. %s, isConsole: %t", err.Error(), isConsole)
 		return Selection5Struct{}, errors.New(err.Error())
 	}
 	maxInt := int(^uint(0) >> 1) // Make a MAX_INT
@@ -334,10 +349,12 @@ func selection5(pq *PriorityQueue, delID int, isConsole bool) (Selection5Struct,
 		jsonData, _ := json.MarshalIndent(s5Struct, "", "    ")
 		fmt.Println(string(jsonData))
 	}
+	logger.Printf("returning selection 5, could not delete %d, isConsole: %t", delID, isConsole)
 	return s5Struct, nil
 }
 
 func selection6(pq *PriorityQueue, isConsole bool) (Selection6Struct, ErrorStruct, error) {
+	logger.Printf("getting selection 6, isConsole: %t", isConsole)
 	status := "IN_SERVICE"
 	if len(pq.harr) >= pq.capacity {
 		status = "MAX_CAPACITY_REACHED"
@@ -347,6 +364,7 @@ func selection6(pq *PriorityQueue, isConsole bool) (Selection6Struct, ErrorStruc
 		if isConsole {
 			fmt.Println(err)
 		}
+		logger.Printf("error getting selection 6. %s, isConsole: %t", err.Error(), isConsole)
 		return Selection6Struct{}, ErrorStruct{Msg: err.Error()}, errors.New(err.Error())
 	}
 	oldestCr, err := getCrByID(pq, oldest)
@@ -354,6 +372,7 @@ func selection6(pq *PriorityQueue, isConsole bool) (Selection6Struct, ErrorStruc
 		if isConsole {
 			fmt.Println(err)
 		}
+		logger.Printf("error getting selection 6. %s, isConsole: %t", err.Error(), isConsole)
 		return Selection6Struct{}, ErrorStruct{Msg: err.Error()}, errors.New(err.Error())
 	}
 	queueInfo := QueueInfo{
@@ -368,14 +387,19 @@ func selection6(pq *PriorityQueue, isConsole bool) (Selection6Struct, ErrorStruc
 		jsonData, _ := json.MarshalIndent(s6Struct, "", "    ")
 		fmt.Println(string(jsonData))
 	}
+	logger.Printf("returning selection 6, isConsole: %t", isConsole)
 	return s6Struct, ErrorStruct{}, nil
 }
 
 func insert(pq *PriorityQueue, cr *CustomerRequest, isConsole bool) bool {
+	logger.Printf("inserting Customer Request")
 	if pq.count >= pq.capacity {
+		errorMsg := "Capacity reached. Could not insert.\n\n"
 		if isConsole {
-			fmt.Printf("Capacity reached. Could not insert.\n\n")
+
+			fmt.Printf(errorMsg)
 		}
+		logger.Printf("ERROR: inserting Customer Request. %s", errorMsg)
 		return false
 	}
 	cr.ID = pq.key
@@ -393,11 +417,12 @@ func insert(pq *PriorityQueue, cr *CustomerRequest, isConsole bool) bool {
 		fmt.Println(cr.ID, cr.PriorityWeight, cr.CustomerName, cr.Description, cr.EnqueueTime)
 	}
 	pq.count++
+	logger.Printf("successfully inserted")
 	return true
 }
 
 func api1(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Endpoint Hit: /api/v1.0/queue/list")
+	logger.Printf("Endpoint Hit: /api/v1.0/queue/list")
 	s1Struct := selection1(&PQ, false)
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
@@ -406,7 +431,7 @@ func api1(w http.ResponseWriter, r *http.Request) {
 }
 
 func api2(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Endpoint Hit: /api/v1.0/queue/detail")
+	logger.Printf("Endpoint Hit: /api/v1.0/queue/detail")
 	s2Struct := selection2(&PQ, false)
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
@@ -415,7 +440,7 @@ func api2(w http.ResponseWriter, r *http.Request) {
 }
 
 func api3(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Endpoint Hit: /api/v1.0/queue/service")
+	logger.Printf("Endpoint Hit: /api/v1.0/queue/service")
 	w.Header().Set("Content-Type", "application/json")
 	s3Struct, errorStruct, err := selection3(&PQ, false)
 	enc := json.NewEncoder(w)
@@ -429,7 +454,7 @@ func api3(w http.ResponseWriter, r *http.Request) {
 
 func api4(w http.ResponseWriter, r *http.Request) {
 	tempTime := time.Now()
-	fmt.Println("Endpoint Hit: /api/v1.0/queue/enqueue")
+	logger.Printf("Endpoint Hit: /api/v1.0/queue/enqueue")
 	enc := json.NewEncoder(w)
 	w.Header().Set("Content-Type", "application/json")
 	enc.SetIndent("", "    ")
@@ -450,7 +475,7 @@ func api4(w http.ResponseWriter, r *http.Request) {
 }
 
 func api5(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Endpoint Hit: /api/v1.0/queue/renege/")
+	logger.Printf("Endpoint Hit: /api/v1.0/queue/renege/")
 	enc := json.NewEncoder(w)
 	w.Header().Set("Content-Type", "application/json")
 	enc.SetIndent("", "    ")
@@ -472,7 +497,7 @@ func api5(w http.ResponseWriter, r *http.Request) {
 }
 
 func api6(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Endpoint Hit: /api/v1.0/SystemInfo")
+	logger.Printf("Endpoint Hit: /api/v1.0/SystemInfo")
 	w.Header().Set("Content-Type", "application/json")
 	s6Struct, errorStruct, err := selection6(&PQ, false)
 	enc := json.NewEncoder(w)
@@ -485,6 +510,7 @@ func api6(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleRequests() {
+	logger.Println("starting API server")
 	// creates a new instance of a mux router
 	myRouter := mux.NewRouter().StrictSlash(true)
 	// replace http.HandleFunc with myRouter.HandleFunc
@@ -497,13 +523,17 @@ func handleRequests() {
 	// finally, instead of passing in nil, we want
 	// to pass in our newly created router as the second
 	// argument
-	log.Fatal(http.ListenAndServe(":10000", myRouter))
+	port := ":10000"
+	logger.Println("API server started listening at port" + port)
+	log.Fatal(http.ListenAndServe(port, myRouter))
 }
 
 // This example creates a Queue with some customerRequests, adds and manipulates an customerRequest,
 // and then removes the customerRequests in PriorityWeight order.
 func main() {
+	logger.Println("logger started")
 	go handleRequests()
+	logger.Println("making database with dummy data")
 	priorities := make([]int, 0)
 	names, descs := make([]string, 0), make([]string, 0)
 
@@ -525,11 +555,13 @@ func main() {
 			index:          i,
 		}
 		_ = insert(&PQ, cr, true)
-		time.Sleep(500000000)
+		time.Sleep(500 * time.Millisecond)
 	}
+	logger.Println("inserted 10 values in queue with a time difference of 500ms each")
 	fmt.Println("")
 	printHeader()
 
+	logger.Println("entering selection mode")
 	for true {
 		printMenu()
 		c := getSelection()
@@ -564,7 +596,7 @@ func main() {
 			_, _ = selection5(&PQ, delID, true)
 		case "6":
 			selection6(&PQ, true)
-		case "8":
+		case "9":
 			printMenu()
 		case "0":
 			return
