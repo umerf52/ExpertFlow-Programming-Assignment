@@ -47,18 +47,14 @@ func TestCreation(t *testing.T) {
 	}
 }
 
-func TestOperations(t *testing.T) {
-	name := "DefaultQueue"
-	desc := "This queue is for demonstration of Priority Queue implementation"
-	cap, k, cn := 1, 0, 0
-	isIn := false
+func TestInsert(t *testing.T) {
 	pq := &PriorityQueue{
-		queueName:        name,
-		queueDescription: desc,
-		capacity:         cap,
-		key:              k,
-		count:            cn,
-		isInitialized:    isIn}
+		queueName:        "DefaultQueue",
+		queueDescription: "This queue is for demonstration of Priority Queue implementation",
+		capacity:         1,
+		key:              0,
+		count:            0,
+		isInitialized:    false}
 
 	cr := &CustomerRequest{
 		PriorityWeight: 10,
@@ -66,15 +62,71 @@ func TestOperations(t *testing.T) {
 		Description:    "important work",
 		EnqueueTime:    time.Now(),
 	}
-	_ = insert(pq, cr, false)
+	result := insert(pq, cr, false)
 
-	if len(pq.harr) != pq.count || pq.count != 1 {
-		t.Errorf("Insertion creation failed. count and heap array length do no match")
+	if len(pq.harr) != pq.count || pq.count != 1 || !result {
+		t.Errorf("Insertion failed. count and heap array length do no match")
 	}
 
-	_ = insert(pq, cr, false)
+	result = insert(pq, cr, false)
 
-	if pq.count > 1 {
+	if pq.count > 1 || result {
 		t.Errorf("Heap array length exceeded")
+	}
+}
+
+func TestRemoval(t *testing.T) {
+	pq := &PriorityQueue{
+		queueName:        "DefaultQueue",
+		queueDescription: "This queue is for demonstration of Priority Queue implementation",
+		capacity:         2,
+		key:              0,
+		count:            0,
+		isInitialized:    false}
+
+	firstName := "first"
+	firstDesc := "this is first customer"
+	firstPriority := 8
+
+	cr1 := &CustomerRequest{
+		PriorityWeight: firstPriority,
+		CustomerName:   firstName,
+		Description:    firstDesc,
+		EnqueueTime:    time.Now(),
+	}
+
+	_ = insert(pq, cr1, false)
+
+	secondName := "second"
+	secondDesc := "this is second customer"
+	secondPriority := 10
+
+	cr2 := &CustomerRequest{
+		PriorityWeight: secondPriority,
+		CustomerName:   secondName,
+		Description:    secondDesc,
+		EnqueueTime:    time.Now(),
+	}
+
+	_ = insert(pq, cr2, false)
+
+	cr3 := &CustomerRequest{
+		PriorityWeight: 9,
+		CustomerName:   "third",
+		Description:    "this is third customer",
+		EnqueueTime:    time.Now(),
+	}
+
+	_ = insert(pq, cr3, false)
+
+	extractedMax := extractMax(pq)
+	if extractedMax.CustomerName != secondName || extractedMax.Description != secondDesc || extractedMax.PriorityWeight != secondPriority {
+		t.Errorf("extractMax() failed. Received unxexpected value")
+	}
+
+	deletedCr, _ := deleteById(pq, 0, false)
+
+	if deletedCr.CustomerName != firstName || deletedCr.Description != firstDesc {
+		t.Errorf("deleteCrById() failed. Received unxexpected value")
 	}
 }

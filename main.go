@@ -26,12 +26,9 @@ func main() {
 	go HandleRequests()
 	logger.Println("making database with dummy data")
 	priorities := make([]int, 0)
-	names, descs := make([]string, 0), make([]string, 0)
 
 	for i := 0; i < SIZE; i++ {
 		priorities = append(priorities, rand.Intn(10)+1)
-		names = append(names, "one")
-		descs = append(descs, "")
 	}
 
 	// Create a priority queue, put the customerRequests in it, and
@@ -40,8 +37,8 @@ func main() {
 	for i := SIZE - 1; i >= 0; i-- {
 		cr := &CustomerRequest{
 			PriorityWeight: priorities[i],
-			CustomerName:   names[i],
-			Description:    descs[i],
+			CustomerName:   "name" + strconv.Itoa(i),
+			Description:    "desc" + strconv.Itoa(i),
 			EnqueueTime:    time.Now(),
 		}
 		_ = insert(&PQ, cr, true)
@@ -91,7 +88,7 @@ func main() {
 		case "0":
 			return
 		default:
-			fmt.Printf("Invalid selection")
+			fmt.Printf("Invalid selection/n")
 		}
 		fmt.Println("")
 	}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"container/heap"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -71,8 +70,7 @@ func selection3(pq *PriorityQueue, isConsole bool) (Selection3Struct, ErrorStruc
 
 		return Selection3Struct{}, ErrorStruct{Msg: errorMsg}, errors.New(errorMsg)
 	}
-	cr := heap.Pop(&pq.harr).(*CustomerRequest)
-	pq.count--
+	cr := extractMax(pq)
 	s3Struct := Selection3Struct{ID: cr.ID,
 		PriorityWeight: cr.PriorityWeight,
 		CustomerName:   cr.CustomerName,
@@ -115,7 +113,7 @@ func selection4(pq *PriorityQueue, cr *CustomerRequest, isConsole bool) (Selecti
 
 func selection5(pq *PriorityQueue, delID int, isConsole bool) (Selection5Struct, error) {
 	logger.Printf("getting selection 5, isConsole: %t", isConsole)
-	cr, err := GetCrByID(pq, delID)
+	cr, err := deleteById(pq, delID, isConsole)
 	if err != nil {
 		if isConsole {
 			fmt.Println(err)
@@ -123,11 +121,6 @@ func selection5(pq *PriorityQueue, delID int, isConsole bool) (Selection5Struct,
 		logger.Printf("error getting selection 5. %s, isConsole: %t", err.Error(), isConsole)
 		return Selection5Struct{}, errors.New(err.Error())
 	}
-	maxInt := int(^uint(0) >> 1) // Make a MAX_INT
-	cr.PriorityWeight = maxInt
-	heap.Fix(&pq.harr, cr.index)
-	_ = heap.Pop(&pq.harr).(*CustomerRequest)
-	pq.count--
 
 	s5Struct := Selection5Struct{
 		CustomerName:  cr.CustomerName,

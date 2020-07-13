@@ -2,7 +2,6 @@ package main
 
 import (
 	"container/heap"
-	"fmt"
 )
 
 func (q Queue) Len() int { return len(q) }
@@ -45,33 +44,4 @@ func (q *Queue) update(customerRequest *CustomerRequest, description string, pri
 	customerRequest.Description = description
 	customerRequest.PriorityWeight = priorityWeight
 	heap.Fix(q, customerRequest.index)
-}
-
-func insert(pq *PriorityQueue, cr *CustomerRequest, isConsole bool) bool {
-	logger.Printf("inserting Customer Request")
-	if pq.count >= pq.capacity {
-		errorMsg := "Capacity reached. Could not insert.\n\n"
-		if isConsole {
-			fmt.Printf(errorMsg)
-		}
-		logger.Printf("ERROR: inserting Customer Request. %s", errorMsg)
-		return false
-	}
-	cr.ID = pq.key
-	cr.index = len(pq.harr)
-	pq.key++
-	if !pq.isInitialized {
-		pq.harr = make(Queue, 1)
-		pq.harr[0] = cr
-		heap.Init(&pq.harr)
-		pq.isInitialized = true
-	} else {
-		heap.Push(&pq.harr, cr)
-	}
-	if isConsole {
-		fmt.Println(cr.ID, cr.PriorityWeight, cr.CustomerName, cr.Description, cr.EnqueueTime)
-	}
-	pq.count++
-	logger.Printf("successfully inserted")
-	return true
 }
