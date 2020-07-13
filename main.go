@@ -28,13 +28,15 @@ var logger = initLogger()
 func main() {
 	logger.Println("logger started")
 	logger.Println("making database with dummy data")
-	priorities := make([]int, 0)
 
+	// Make a slice of random integers from range 1 to 10
+	priorities := make([]int, 0)
 	for i := 0; i < SIZE; i++ {
 		priorities = append(priorities, rand.Intn(10)+1)
 	}
 
-	for i := SIZE - 1; i >= 0; i-- {
+	// Insert requests in the queue
+	for i := 0; i < SIZE; i++ {
 		cr := &CustomerRequest{
 			PriorityWeight: priorities[i],
 			CustomerName:   "name" + strconv.Itoa(i),
@@ -43,10 +45,13 @@ func main() {
 		}
 		_ = insert(&PQ, cr, true)
 	}
-	go handleRequests()
-	printHeader()
 
+	// Start server to listen for REST API requests
+	go handleRequests()
+
+	printHeader()
 	logger.Println("entering selection mode")
+	// Serve appropriate requests
 	for true {
 		printMenu()
 		c := getSelection()

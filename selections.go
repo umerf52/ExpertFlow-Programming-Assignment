@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// This method is for Listing Customers in Queue
 func selection1(pq *PriorityQueue, isConsole bool) Selection1Struct {
 	logger.Printf("getting selection 1, isConsole: %t", isConsole)
 	tempArray := make([]IDJSON, 0)
@@ -29,6 +30,7 @@ func selection1(pq *PriorityQueue, isConsole bool) Selection1Struct {
 	return s1Struct
 }
 
+// This method is for Listing Customers details in Queue
 func selection2(pq *PriorityQueue, isConsole bool) Selection2Struct {
 	logger.Printf("getting selection 2, isConsole: %t", isConsole)
 	tempArray := make([]*CustomerRequest, 0)
@@ -59,6 +61,7 @@ func selection2(pq *PriorityQueue, isConsole bool) Selection2Struct {
 	return s2Struct
 }
 
+// This method is for Servicing Customer Request
 func selection3(pq *PriorityQueue, isConsole bool) (Selection3Struct, ErrorStruct, error) {
 	logger.Printf("getting selection 3, isConsole: %t", isConsole)
 	if pq.count <= 0 {
@@ -87,6 +90,7 @@ func selection3(pq *PriorityQueue, isConsole bool) (Selection3Struct, ErrorStruc
 	return s3Struct, ErrorStruct{}, nil
 }
 
+// This method is for Enqueueing Customer Request
 func selection4(pq *PriorityQueue, cr *CustomerRequest, isConsole bool) (Selection4Struct, error) {
 	logger.Printf("getting selection 4, isConsole: %t", isConsole)
 	logger.Printf("%s, %s, %d", cr.CustomerName, cr.Description, cr.PriorityWeight)
@@ -112,6 +116,7 @@ func selection4(pq *PriorityQueue, cr *CustomerRequest, isConsole bool) (Selecti
 	return s4Struct, nil
 }
 
+// This method is for Reneging Customer Request
 func selection5(pq *PriorityQueue, delID int, isConsole bool) (Selection5Struct, error) {
 	logger.Printf("getting selection 5, isConsole: %t", isConsole)
 	cr, err := deleteByID(pq, delID, isConsole)
@@ -139,6 +144,7 @@ func selection5(pq *PriorityQueue, delID int, isConsole bool) (Selection5Struct,
 	return s5Struct, nil
 }
 
+// This method is for getting System Information
 func selection6(pq *PriorityQueue, isConsole bool) (Selection6Struct, ErrorStruct, error) {
 	logger.Printf("getting selection 6, isConsole: %t", isConsole)
 	status := "IN_SERVICE"

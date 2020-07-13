@@ -18,10 +18,10 @@ type Queue []*CustomerRequest
 
 // PriorityQueue wraps the actual priority queue and provides additional functionality
 type PriorityQueue struct {
-	harr                        Queue
+	harr                        Queue // harr is a Queue that implements heap interface
 	queueName, queueDescription string
-	capacity, count, key        int
-	isInitialized               bool
+	capacity, count, key        int  // key is used to uniquely identify CustomerRequests
+	isInitialized               bool // it is used to check if the at least one item has been inserted in harr or not
 }
 
 // IDJSON is used to in Selection1Struct

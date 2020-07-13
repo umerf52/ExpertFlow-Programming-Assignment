@@ -11,25 +11,23 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// This method is used as a goroutine to handle REST APIs
 func handleRequests() {
 	logger.Println("starting API server")
 	// creates a new instance of a mux router
 	myRouter := mux.NewRouter().StrictSlash(true)
-	// replace http.HandleFunc with myRouter.HandleFunc
 	myRouter.HandleFunc("/api/v1.0/queue/list", api1)
 	myRouter.HandleFunc("/api/v1.0/queue/detail", api2)
 	myRouter.HandleFunc("/api/v1.0/queue/service", api3)
 	myRouter.HandleFunc("/api/v1.0/queue/enqueue", api4).Methods("POST")
 	myRouter.HandleFunc("/api/v1.0/queue/renege/{id}", api5).Methods("DELETE")
 	myRouter.HandleFunc("/api/v1.0/SystemInfo", api6)
-	// finally, instead of passing in nil, we want
-	// to pass in our newly created router as the second
-	// argument
 	port := ":10000"
 	logger.Println("API server started listening at port" + port)
 	log.Fatal(http.ListenAndServe(port, myRouter))
 }
 
+// This method is for Listing Customers in Queue
 func api1(w http.ResponseWriter, r *http.Request) {
 	logger.Printf("Endpoint Hit: /api/v1.0/queue/list")
 	s1Struct := selection1(&PQ, false)
@@ -39,6 +37,7 @@ func api1(w http.ResponseWriter, r *http.Request) {
 	enc.Encode(s1Struct)
 }
 
+// This method is for Listing Customers details in Queue
 func api2(w http.ResponseWriter, r *http.Request) {
 	logger.Printf("Endpoint Hit: /api/v1.0/queue/detail")
 	s2Struct := selection2(&PQ, false)
@@ -48,6 +47,7 @@ func api2(w http.ResponseWriter, r *http.Request) {
 	enc.Encode(s2Struct)
 }
 
+// This method is for Servicing Customer Request
 func api3(w http.ResponseWriter, r *http.Request) {
 	logger.Printf("Endpoint Hit: /api/v1.0/queue/service")
 	w.Header().Set("Content-Type", "application/json")
@@ -61,6 +61,7 @@ func api3(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// This method is for Enqueueing Customer Request
 func api4(w http.ResponseWriter, r *http.Request) {
 	tempTime := time.Now()
 	logger.Printf("Endpoint Hit: /api/v1.0/queue/enqueue")
@@ -83,6 +84,7 @@ func api4(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// This method is for Reneging Customer Request
 func api5(w http.ResponseWriter, r *http.Request) {
 	logger.Printf("Endpoint Hit: /api/v1.0/queue/renege/")
 	enc := json.NewEncoder(w)
@@ -105,6 +107,7 @@ func api5(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// This method is for getting System Information
 func api6(w http.ResponseWriter, r *http.Request) {
 	logger.Printf("Endpoint Hit: /api/v1.0/SystemInfo")
 	w.Header().Set("Content-Type", "application/json")

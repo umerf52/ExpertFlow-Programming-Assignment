@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 )
 
+// This method is called from main.go
 func initLogger() *log.Logger {
 	logPath := "C:\\PriorityQueue"
 	fileName := "logs.txt"

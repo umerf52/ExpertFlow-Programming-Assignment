@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// This test checks creation of Priority Queue objects
 func TestCreation(t *testing.T) {
 	name := "DefaultQueue"
 	desc := "This queue is for demonstration of Priority Queue implementation"
@@ -47,6 +48,7 @@ func TestCreation(t *testing.T) {
 	}
 }
 
+// This test checks for insertion in Priority Queue
 func TestInsert(t *testing.T) {
 	pq := &PriorityQueue{
 		queueName:        "DefaultQueue",
@@ -75,6 +77,7 @@ func TestInsert(t *testing.T) {
 	}
 }
 
+// This test checks for removing items from PriorityQueue
 func TestRemoval(t *testing.T) {
 	pq := &PriorityQueue{
 		queueName:        "DefaultQueue",

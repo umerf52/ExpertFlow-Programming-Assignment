@@ -1,3 +1,7 @@
+// This is Priority Queue implementation of heap
+// The skeleton code was taken from Go's official documentation:
+// https://golang.org/pkg/container/heap/
+
 package main
 
 import (
