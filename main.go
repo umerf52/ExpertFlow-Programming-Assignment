@@ -43,7 +43,6 @@ func main() {
 			CustomerName:   names[i],
 			Description:    descs[i],
 			EnqueueTime:    time.Now(),
-			index:          i,
 		}
 		_ = insert(&PQ, cr, true)
 		time.Sleep(500 * time.Millisecond)
