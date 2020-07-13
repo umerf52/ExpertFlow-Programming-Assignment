@@ -7,13 +7,13 @@ import (
 	"os"
 )
 
-func PrintHeader() {
+func printHeader() {
 	fmt.Println("*************************************************************")
 	fmt.Println("* Welcome to Priority Queue, please select from following   *")
 	fmt.Println("*************************************************************")
 }
 
-func PrintMenu() {
+func printMenu() {
 	fmt.Println("1. List Customers in Queue")
 	fmt.Println("2. List Customer Details in Queue")
 	fmt.Println("3. Service Customer")
@@ -25,14 +25,14 @@ func PrintMenu() {
 	fmt.Println("")
 }
 
-func GetSelection() string {
+func getSelection() string {
 	fmt.Printf("Enter selection: ")
 	reader := bufio.NewReader(os.Stdin)
 	input, _ := reader.ReadString('\n')
 	return string([]byte(input)[0])
 }
 
-func GetOldestTaskID(pq *PriorityQueue) (int, error) {
+func getOldestTaskID(pq *PriorityQueue) (int, error) {
 	if pq.count <= 0 {
 		return -1, errors.New("queue is empty")
 	}
@@ -48,14 +48,14 @@ func GetOldestTaskID(pq *PriorityQueue) (int, error) {
 	return oldestID, nil
 }
 
-func GetInput() string {
+func getInput() string {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 	temp := scanner.Text()
 	return temp
 }
 
-func GetCrByID(pq *PriorityQueue, ID int) (*CustomerRequest, error) {
+func getCrByID(pq *PriorityQueue, ID int) (*CustomerRequest, error) {
 	for i := 0; i < len(pq.harr); i++ {
 		if pq.harr[i].ID == ID {
 			return pq.harr[i], nil

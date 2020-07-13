@@ -124,7 +124,7 @@ func TestRemoval(t *testing.T) {
 		t.Errorf("extractMax() failed. Received unxexpected value")
 	}
 
-	deletedCr, _ := deleteById(pq, 0, false)
+	deletedCr, _ := deleteByID(pq, 0, false)
 
 	if deletedCr.CustomerName != firstName || deletedCr.Description != firstDesc {
 		t.Errorf("deleteCrById() failed. Received unxexpected value")

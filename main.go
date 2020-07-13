@@ -9,7 +9,11 @@ import (
 )
 
 // Globals
-var SIZE = 10
+
+// SIZE is the capacity of the priority queue
+var SIZE = 50000
+
+// PQ is the priority queue
 var PQ = PriorityQueue{
 	queueName:        "DefaultQueue",
 	queueDescription: "This queue is for demonstration of Priority Queue implementation",
@@ -23,16 +27,12 @@ var logger = initLogger()
 // and then removes the customerRequests in PriorityWeight order.
 func main() {
 	logger.Println("logger started")
-	go HandleRequests()
 	logger.Println("making database with dummy data")
 	priorities := make([]int, 0)
 
 	for i := 0; i < SIZE; i++ {
 		priorities = append(priorities, rand.Intn(10)+1)
 	}
-
-	// Create a priority queue, put the customerRequests in it, and
-	// establish the priority queue (heap) invariants.
 
 	for i := SIZE - 1; i >= 0; i-- {
 		cr := &CustomerRequest{
@@ -42,16 +42,14 @@ func main() {
 			EnqueueTime:    time.Now(),
 		}
 		_ = insert(&PQ, cr, true)
-		time.Sleep(500 * time.Millisecond)
 	}
-	logger.Println("inserted 10 values in queue with a time difference of 500ms each")
-	fmt.Println("")
-	PrintHeader()
+	go handleRequests()
+	printHeader()
 
 	logger.Println("entering selection mode")
 	for true {
-		PrintMenu()
-		c := GetSelection()
+		printMenu()
+		c := getSelection()
 
 		switch c {
 		case "1":
@@ -63,11 +61,11 @@ func main() {
 		case "4":
 			fmt.Println("Please enter following information: ")
 			fmt.Printf("Customer Name: ")
-			name := GetInput()
+			name := getInput()
 			fmt.Printf("Description: ")
-			desc := GetInput()
+			desc := getInput()
 			fmt.Printf("Priority Weight: ")
-			priorityStr := GetInput()
+			priorityStr := getInput()
 			priorityInt, _ := strconv.Atoi(priorityStr)
 			cr := &CustomerRequest{
 				PriorityWeight: priorityInt,
@@ -78,13 +76,13 @@ func main() {
 			_, _ = selection4(&PQ, cr, true)
 		case "5":
 			fmt.Printf("Please enter customer ID: ")
-			tempStr := GetInput()
+			tempStr := getInput()
 			delID, _ := strconv.Atoi(tempStr)
 			_, _ = selection5(&PQ, delID, true)
 		case "6":
 			selection6(&PQ, true)
 		case "9":
-			PrintMenu()
+			printMenu()
 		case "0":
 			return
 		default:

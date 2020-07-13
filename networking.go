@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func HandleRequests() {
+func handleRequests() {
 	logger.Println("starting API server")
 	// creates a new instance of a mux router
 	myRouter := mux.NewRouter().StrictSlash(true)

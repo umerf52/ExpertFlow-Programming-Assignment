@@ -27,11 +27,9 @@ func insert(pq *PriorityQueue, cr *CustomerRequest, isConsole bool) bool {
 	} else {
 		heap.Push(&pq.harr, cr)
 	}
-	if isConsole {
-		fmt.Println(cr.ID, cr.PriorityWeight, cr.CustomerName, cr.Description, cr.EnqueueTime)
-	}
 	pq.count++
-	logger.Printf("successfully inserted")
+	logger.Printf("successfully inserted following:")
+	logger.Println(cr.ID, cr.PriorityWeight, cr.CustomerName, cr.Description, cr.EnqueueTime)
 	return true
 }
 
@@ -41,8 +39,8 @@ func extractMax(pq *PriorityQueue) *CustomerRequest {
 	return cr
 }
 
-func deleteById(pq *PriorityQueue, delID int, isConsole bool) (*CustomerRequest, error) {
-	cr, err := GetCrByID(pq, delID)
+func deleteByID(pq *PriorityQueue, delID int, isConsole bool) (*CustomerRequest, error) {
+	cr, err := getCrByID(pq, delID)
 	if err != nil {
 		// if isConsole {
 		// 	fmt.Println(err)

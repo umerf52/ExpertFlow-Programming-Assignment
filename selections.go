@@ -14,7 +14,7 @@ func selection1(pq *PriorityQueue, isConsole bool) Selection1Struct {
 	for i := 0; i < len(pq.harr); i++ {
 		tempArray = append(tempArray, IDJSON{ID: pq.harr[i].ID})
 	}
-	oldest, _ := GetOldestTaskID(pq)
+	oldest, _ := getOldestTaskID(pq)
 	s1Struct := Selection1Struct{QueueName: pq.queueName,
 		QueueDescription: pq.queueDescription,
 		Size:             len(pq.harr),
@@ -43,7 +43,7 @@ func selection2(pq *PriorityQueue, isConsole bool) Selection2Struct {
 		}
 		tempArray = append(tempArray, cr)
 	}
-	oldest, _ := GetOldestTaskID(pq)
+	oldest, _ := getOldestTaskID(pq)
 	s2Struct := Selection2Struct{QueueName: pq.queueName,
 		QueueDescription: pq.queueDescription,
 		Size:             len(pq.harr),
@@ -89,6 +89,7 @@ func selection3(pq *PriorityQueue, isConsole bool) (Selection3Struct, ErrorStruc
 
 func selection4(pq *PriorityQueue, cr *CustomerRequest, isConsole bool) (Selection4Struct, error) {
 	logger.Printf("getting selection 4, isConsole: %t", isConsole)
+	logger.Printf("%s, %s, %d", cr.CustomerName, cr.Description, cr.PriorityWeight)
 	if !insert(pq, cr, isConsole) {
 		errorMsg := "The system is working at its peak capacity, please try again later."
 		logger.Printf("error getting selection 4. %s isConsole: %t", errorMsg, isConsole)
@@ -107,13 +108,13 @@ func selection4(pq *PriorityQueue, cr *CustomerRequest, isConsole bool) (Selecti
 		jsonData, _ := json.MarshalIndent(s4Struct, "", "    ")
 		fmt.Println(string(jsonData))
 	}
-	logger.Printf("returning selection 4, isConsole: %t", isConsole)
+	logger.Printf("successfully returning selection 4, isConsole: %t", isConsole)
 	return s4Struct, nil
 }
 
 func selection5(pq *PriorityQueue, delID int, isConsole bool) (Selection5Struct, error) {
 	logger.Printf("getting selection 5, isConsole: %t", isConsole)
-	cr, err := deleteById(pq, delID, isConsole)
+	cr, err := deleteByID(pq, delID, isConsole)
 	if err != nil {
 		if isConsole {
 			fmt.Println(err)
@@ -144,7 +145,7 @@ func selection6(pq *PriorityQueue, isConsole bool) (Selection6Struct, ErrorStruc
 	if len(pq.harr) >= pq.capacity {
 		status = "MAX_CAPACITY_REACHED"
 	}
-	oldest, err := GetOldestTaskID(pq)
+	oldest, err := getOldestTaskID(pq)
 	if err != nil {
 		if isConsole {
 			fmt.Println(err)
@@ -152,7 +153,7 @@ func selection6(pq *PriorityQueue, isConsole bool) (Selection6Struct, ErrorStruc
 		logger.Printf("error getting selection 6. %s, isConsole: %t", err.Error(), isConsole)
 		return Selection6Struct{}, ErrorStruct{Msg: err.Error()}, errors.New(err.Error())
 	}
-	oldestCr, err := GetCrByID(pq, oldest)
+	oldestCr, err := getCrByID(pq, oldest)
 	if err != nil {
 		if isConsole {
 			fmt.Println(err)
